@@ -66,7 +66,7 @@ class customfield extends \core_search\base {
         if (!$fields) {
             $fields = array();
         }
-        list($fieldsql, $fieldparam) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld', true, 0);
+        list($fieldsql, $fieldparam) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld', true, true);
 
         // Restrict recordset to CONTEXT_COURSE (since we are implementing it to core_course\search).
         $sql = "SELECT d.*

@@ -22,6 +22,8 @@
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+$string['activeparticipantnumberaverage'] = 'Average number of recently active participants ({$a})';
+$string['activeusersnumber'] = 'Number of recently active users ({$a})';
 $string['analyticsactions'] = 'Number of actions taken on generated predictions ({$a})';
 $string['analyticsactionsnotuseful'] = 'Number of actions marking a prediction as not useful ({$a})';
 $string['analyticsenabledmodels'] = 'Number of enabled prediction models ({$a})';
@@ -118,7 +120,7 @@ $string['roleassignmentsnumber'] = 'Number of role assignments ({$a})';
 $string['search'] = 'Search';
 $string['sendingsize'] = 'Please wait the course file is uploading ({$a->total}Mb)...';
 $string['sendfollowinginfo'] = 'More information';
-$string['sendfollowinginfo_help'] = 'The following information will be sent to Moodle each time your site registration is updated (by default weekly, when the \'Site registration\' scheduled task is run). The information contributes to overall statistics only and will not be made public on any site listing.';
+$string['sendfollowinginfo_help'] = 'The following information will be sent to contribute to overall statistics only.  It will not be made public on any site listing.';
 $string['sent'] = '...finished';
 $string['siteadmin'] = 'Administrator';
 $string['siteadmin_help'] = 'The full name of the site administrator.';

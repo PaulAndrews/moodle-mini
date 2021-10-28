@@ -34,7 +34,6 @@ use core_component;
 use moodle_exception;
 use context_system;
 use theme_config;
-use core\external\output\icon_system\load_fontawesome_map;
 
 /**
  * This class contains a list of webservice functions related to output.
@@ -206,9 +205,21 @@ class external extends external_api {
      * @return array the mapping
      */
     public static function load_fontawesome_icon_map() {
-        global $PAGE;
+        $instance = icon_system::instance(icon_system::FONTAWESOME);
 
-        return load_fontawesome_map::execute($PAGE->theme->name);
+        $map = $instance->get_icon_name_map();
+
+        $result = [];
+
+        foreach ($map as $from => $to) {
+            list($component, $pix) = explode(':', $from);
+            $one = [];
+            $one['component'] = $component;
+            $one['pix'] = $pix;
+            $one['to'] = $to;
+            $result[] = $one;
+        }
+        return $result;
     }
 
     /**
@@ -217,6 +228,13 @@ class external extends external_api {
      * @return external_description
      */
     public static function load_fontawesome_icon_map_returns() {
-        return load_fontawesome_map::execute_returns();
+        return new external_multiple_structure(new external_single_structure(
+            array(
+                'component' => new external_value(PARAM_COMPONENT, 'The component for the icon.'),
+                'pix' => new external_value(PARAM_RAW, 'Value to map the icon from.'),
+                'to' => new external_value(PARAM_RAW, 'Value to map the icon to.')
+            )
+        ));
     }
 }
+

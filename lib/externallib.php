@@ -84,12 +84,11 @@ class external_api {
                 $function->classpath = $CFG->dirroot.'/'.$function->classpath;
             }
             if (!file_exists($function->classpath)) {
-                throw new coding_exception('Cannot find file ' . $function->classpath .
-                        ' with external function implementation');
+                throw new coding_exception('Cannot find file with external function implementation');
             }
             require_once($function->classpath);
             if (!class_exists($function->classname)) {
-                throw new coding_exception('Cannot find external class ' . $function->classname);
+                throw new coding_exception('Cannot find external class');
             }
         }
 
@@ -100,16 +99,13 @@ class external_api {
 
         // Make sure the implementaion class is ok.
         if (!method_exists($function->classname, $function->methodname)) {
-            throw new coding_exception('Missing implementation method ' .
-                    $function->classname . '::' . $function->methodname);
+            throw new coding_exception('Missing implementation method of '.$function->classname.'::'.$function->methodname);
         }
         if (!method_exists($function->classname, $function->parameters_method)) {
-            throw new coding_exception('Missing parameters description method ' .
-                    $function->classname . '::' . $function->parameters_method);
+            throw new coding_exception('Missing parameters description');
         }
         if (!method_exists($function->classname, $function->returns_method)) {
-            throw new coding_exception('Missing returned values description method ' .
-                    $function->classname . '::' . $function->returns_method);
+            throw new coding_exception('Missing returned values description');
         }
         if (method_exists($function->classname, $function->deprecated_method)) {
             if (call_user_func(array($function->classname, $function->deprecated_method)) === true) {
@@ -121,16 +117,14 @@ class external_api {
         // Fetch the parameters description.
         $function->parameters_desc = call_user_func(array($function->classname, $function->parameters_method));
         if (!($function->parameters_desc instanceof external_function_parameters)) {
-            throw new coding_exception($function->classname . '::' . $function->parameters_method .
-                    ' did not return a valid external_function_parameters object.');
+            throw new coding_exception('Invalid parameters description');
         }
 
         // Fetch the return values description.
         $function->returns_desc = call_user_func(array($function->classname, $function->returns_method));
         // Null means void result or result is ignored.
         if (!is_null($function->returns_desc) and !($function->returns_desc instanceof external_description)) {
-            throw new coding_exception($function->classname . '::' . $function->returns_method .
-                    ' did not return a valid external_description object');
+            throw new coding_exception('Invalid return description');
         }
 
         // Now get the function description.
@@ -167,6 +161,11 @@ class external_api {
             } else {
                 $function->loginrequired = true;
             }
+            if (isset($functions[$function->name]['readonlysession'])) {
+                $function->readonlysession = $functions[$function->name]['readonlysession'];
+            } else {
+                $function->readonlysession = false;
+            }
         }
 
         return $function;
@@ -189,6 +188,12 @@ class external_api {
         require_once($CFG->libdir . "/pagelib.php");
 
         $externalfunctioninfo = static::external_function_info($function);
+
+        // Eventually this should shift into the various handlers and not be handled via config.
+        $readonlysession = $externalfunctioninfo->readonlysession ?? false;
+        if (!$readonlysession || empty($CFG->enable_read_only_sessions)) {
+            \core\session\manager::restart_with_write_lock();
+        }
 
         $currentpage = $PAGE;
         $currentcourse = $COURSE;
@@ -239,7 +244,7 @@ class external_api {
                 foreach ($plugins as $plugin => $callback) {
                     $result = $callback($externalfunctioninfo, $params);
                     if ($result !== false) {
-                        break 2;
+                        break;
                     }
                 }
             }

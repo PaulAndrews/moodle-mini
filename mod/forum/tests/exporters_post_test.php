@@ -46,12 +46,8 @@ class mod_forum_exporters_post_testcase extends advanced_testcase {
 
     /**
      * Test the export function returns expected values.
-     *
-     * @dataProvider export_post_provider
-     * @param bool $istimed True if this is a timed post
-     * @param int $addtime Seconds to be added to the current time
      */
-    public function test_export_post($istimed = false, $addtime = 0) {
+    public function test_export_post() {
         global $CFG, $PAGE;
         $this->resetAfterTest();
 
@@ -65,18 +61,12 @@ class mod_forum_exporters_post_testcase extends advanced_testcase {
         $forum = $datagenerator->create_module('forum', ['course' => $course->id]);
         $coursemodule = get_coursemodule_from_instance('forum', $forum->id);
         $context = context_module::instance($coursemodule->id);
-        $now = time();
-
-        $forumgenparams = [
+        $discussion = $forumgenerator->create_discussion((object) [
             'course' => $forum->course,
             'userid' => $user->id,
-            'forum' => $forum->id,
-        ];
-        if ($istimed) {
-            $forumgenparams['timestart'] = $now + $addtime;
-        }
-        $discussion = $forumgenerator->create_discussion((object) $forumgenparams);
-
+            'forum' => $forum->id
+        ]);
+        $now = time();
         $post = $forumgenerator->create_post((object) [
             'discussion' => $discussion->id,
             'parent' => 0,
@@ -160,11 +150,7 @@ class mod_forum_exporters_post_testcase extends advanced_testcase {
         $this->assertEquals($discussion->get_id(), $exportedpost->discussionid);
         $this->assertEquals(false, $exportedpost->hasparent);
         $this->assertEquals(null, $exportedpost->parentid);
-        if ($istimed && ($addtime > 0)) {
-            $this->assertEquals($now + $addtime, $exportedpost->timecreated);
-        } else {
-            $this->assertEquals($now, $exportedpost->timecreated);
-        }
+        $this->assertEquals($now, $exportedpost->timecreated);
         $this->assertEquals(null, $exportedpost->unread);
         $this->assertEquals(false, $exportedpost->isdeleted);
         $this->assertEquals($canview, $exportedpost->capabilities['view']);
@@ -191,26 +177,6 @@ class mod_forum_exporters_post_testcase extends advanced_testcase {
         $this->assertEquals(null, $exportedpost->html['rating']);
         $this->assertNotEquals(null, $exportedpost->html['taglist']);
         $this->assertNotEmpty($exportedpost->html['authorsubheading']);
-    }
-
-    /**
-     * Data provider for test_export_post().
-     *
-     * @return array
-     */
-    public function export_post_provider(): array {
-        return [
-            'Simple export' => [
-            ],
-            'Test timed post future' => [
-                true,
-                1000
-            ],
-            'Test timed post past' => [
-                true,
-                -1000
-            ],
-        ];
     }
 
     /**

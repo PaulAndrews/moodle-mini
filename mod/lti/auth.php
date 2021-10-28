@@ -28,7 +28,7 @@ require_once($CFG->dirroot . '/mod/lti/locallib.php');
 $scope = optional_param('scope', '', PARAM_TEXT);
 $responsetype = optional_param('response_type', '', PARAM_TEXT);
 $clientid = optional_param('client_id', '', PARAM_TEXT);
-$redirecturi = optional_param('redirect_uri', '', PARAM_URL);
+$redirecturi = optional_param('redirect_uri', '', PARAM_TEXT);
 $loginhint = optional_param('login_hint', '', PARAM_TEXT);
 $ltimessagehint = optional_param('lti_message_hint', 0, PARAM_INT);
 $state = optional_param('state', '', PARAM_TEXT);
@@ -68,14 +68,12 @@ if ($ok && ($loginhint !== $USER->id)) {
     $ok = false;
     $error = 'access_denied';
 }
-
-// If we're unable to load up config; we cannot trust the redirect uri for POSTing to.
-if (empty($config)) {
-    throw new moodle_exception('invalidrequest', 'error');
-} else {
+if ($ok) {
     $uris = array_map("trim", explode("\n", $config->lti_redirectionuris));
-    if (!in_array($redirecturi, $uris)) {
-        throw new moodle_exception('invalidrequest', 'error');
+    $ok = in_array($redirecturi, $uris);
+    if (!$ok) {
+        $error = 'invalid_request';
+        $desc = 'Unregistered redirect_uri ' . $redirecturi;
     }
 }
 if ($ok) {

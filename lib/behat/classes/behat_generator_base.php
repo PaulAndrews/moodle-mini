@@ -171,22 +171,12 @@ abstract class behat_generator_base {
      *
      * @param string    $generatortype The name of the entity to create.
      * @param TableNode $data from the step.
-     * @param bool      $singular Whether there is only one record and it is pivotted
      */
-    public function generate_items(string $generatortype, TableNode $data, bool $singular = false) {
+    public function generate_items(string $generatortype, TableNode $data) {
         // Now that we need them require the data generators.
         require_once(__DIR__ . '/../../testing/generator/lib.php');
 
         $elements = $this->get_creatable_entities();
-
-        foreach ($elements as $key => $configuration) {
-            if (array_key_exists('singular', $configuration)) {
-                $singularverb = $configuration['singular'];
-                unset($configuration['singular']);
-                unset($elements[$key]['singular']);
-                $elements[$singularverb] = $configuration;
-            }
-        }
 
         if (!isset($elements[$generatortype])) {
             throw new PendingException($this->name_for_errors($generatortype) .
@@ -203,17 +193,8 @@ abstract class behat_generator_base {
 
         $generatortype = $entityinfo['datagenerator'];
 
-        if ($singular) {
-            // There is only one record to generate, and the table has been pivotted.
-            // The rows each represent a single field.
-            $rows = [$data->getRowsHash()];
-        } else {
-            // There are multiple records to generate.
-            // The rows represent an item to create.
-            $rows = $data->getHash();
-        }
+        foreach ($data->getHash() as $elementdata) {
 
-        foreach ($rows as $elementdata) {
             // Check if all the required fields are there.
             foreach ($entityinfo['required'] as $requiredfield) {
                 if (!isset($elementdata[$requiredfield])) {
@@ -540,6 +521,20 @@ abstract class behat_generator_base {
 
         if (!$id = $DB->get_field('user', 'id', array('username' => $username))) {
             throw new Exception('The specified user with username "' . $username . '" does not exist');
+        }
+        return $id;
+    }
+
+    /**
+     * Gets the external backpack id from it's backpackweburl.
+     * @param string $backpackweburl
+     * @return mixed
+     * @throws dml_exception
+     */
+    protected function get_externalbackpack_id($backpackweburl) {
+        global $DB;
+        if (!$id = $DB->get_field('badge_external_backpack', 'id', ['backpackweburl' => $backpackweburl])) {
+            throw new Exception('The specified external backpack with backpackweburl "' . $username . '" does not exist');
         }
         return $id;
     }

@@ -1,5 +1,6 @@
 <?php
-// This file is part of Moodle - https://moodle.org/
+
+// This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -12,7 +13,7 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <https://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * Automatically generated strings for Moodle installer
@@ -41,7 +42,7 @@ $string['databasename'] = 'Ime baze podataka';
 $string['databasetypehead'] = 'Izaberite driver baze podataka';
 $string['dataroot'] = 'Direktorij podataka';
 $string['datarootpermission'] = 'Ovlaštenja nad direktorijom podataka';
-$string['dbprefix'] = 'Prefiks tabele';
+$string['dbprefix'] = 'Lista prefiksa';
 $string['dirroot'] = 'Moodle direktorij';
 $string['environmenthead'] = 'Provjeravanje Vašeg okruženja...';
 $string['environmentsub2'] = 'Svaka verzija Moodlea ima minimum zahtjeva po pitanju odgovarajuće PHP verzije i nekoliko obaveznih PHP ekstenzija. Puna provjera okruženja se vrši prije svakog instaliranja ili ažuriranja postojeće verzije. Ukoliko ne znate kako da instalirate novu verziju ili omogućite PHP ekstenzije kontaktirajte Vašeg server administratora.';

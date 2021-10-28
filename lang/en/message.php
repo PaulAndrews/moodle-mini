@@ -69,7 +69,6 @@ $string['emailtagline'] = 'This is a copy of a message sent to you at "{$a->site
 $string['enabled'] = 'Enabled';
 $string['errorcallingprocessor'] = 'Error calling defined output';
 $string['errorconversationdoesnotexist'] = 'Conversation does not exist';
-$string['errormessagetoolong'] = 'The message is longer than the maximum allowed.';
 $string['errortranslatingdefault'] = 'Error translating default setting provided by plugin, using system defaults instead.';
 $string['eventgroupmessagesent'] = 'Group message sent';
 $string['eventnotificationviewed'] = 'Notification viewed';
@@ -102,8 +101,8 @@ $string['managemessageoutputs'] = 'Default notification preferences';
 $string['messageoutputs'] = 'Notification plugins';
 $string['messagepreferences'] = 'Message preferences';
 $string['message'] = 'Message';
-$string['messagecontactrequestsnotification'] = '{$a} is requesting to be added as a contact.';
-$string['messagecontactrequestsnotificationsubject'] = 'Contact request from {$a}';
+$string['messagecontactrequest'] = '{$a->user} is requesting to be added as a contact. Visit your <a href="{$a->url}">contact requests</a> page to respond to the request';
+$string['messagecontactrequestsubject'] = '{$a->sitename}: Contact request from {$a->user}';
 $string['messagecontentaudio'] = 'Audio';
 $string['messagecontentimage'] = 'Image';
 $string['messagecontentmultimediageneral'] = 'Other media';
@@ -290,3 +289,7 @@ $string['outputdoesnotexist'] = 'Message output does not exist';
 $string['outputenabled'] = 'Output enabled';
 $string['outputnotconfigured'] = 'Not configured';
 $string['canceledit'] = 'Cancel editing messages';
+
+// Deprecated since Moodle 3.9.
+$string['messagecontactrequestsnotification'] = '{$a} is requesting to be added as a contact.';
+$string['messagecontactrequestsnotificationsubject'] = 'Contact request from {$a}';

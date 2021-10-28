@@ -75,7 +75,6 @@ class core_course_editcategory_form extends moodleform {
 
         $mform->addElement('editor', 'description_editor', get_string('description'), null,
             $this->get_description_editor_options());
-        $mform->setType('description_editor', PARAM_RAW);
 
         if (!empty($CFG->allowcategorythemes)) {
             $themes = array(''=>get_string('forceno'));
@@ -106,8 +105,7 @@ class core_course_editcategory_form extends moodleform {
         return array(
             'maxfiles'  => EDITOR_UNLIMITED_FILES,
             'maxbytes'  => $CFG->maxbytes,
-            'trusttext' => false,
-            'noclean'   => true,
+            'trusttext' => true,
             'context'   => $context,
             'subdirs'   => file_area_contains_subdirs($context, 'coursecat', 'description', $itemid),
         );

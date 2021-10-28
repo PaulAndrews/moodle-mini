@@ -372,10 +372,10 @@ class auth extends \auth_plugin_base {
             if ($user->auth != $this->authtype) {
                 return AUTH_CONFIRM_ERROR;
 
-            } else if ($user->secret === $confirmsecret && $user->confirmed) {
+            } else if ($user->secret == $confirmsecret && $user->confirmed) {
                 return AUTH_CONFIRM_ALREADY;
 
-            } else if ($user->secret === $confirmsecret) {   // They have provided the secret key to get in.
+            } else if ($user->secret == $confirmsecret) {   // They have provided the secret key to get in.
                 $DB->set_field("user", "confirmed", 1, array("id" => $user->id));
                 return AUTH_CONFIRM_OK;
             }
@@ -455,9 +455,8 @@ class auth extends \auth_plugin_base {
             }
         }
 
-        $issuer = $client->get_issuer();
         // First we try and find a defined mapping.
-        $linkedlogin = api::match_username_to_user($userinfo['username'], $issuer);
+        $linkedlogin = api::match_username_to_user($userinfo['username'], $client->get_issuer());
 
         if (!empty($linkedlogin) && empty($linkedlogin->get('confirmtoken'))) {
             $mappeduser = get_complete_user_data('id', $linkedlogin->get('userid'));
@@ -475,7 +474,7 @@ class auth extends \auth_plugin_base {
                 $SESSION->loginerrormsg = get_string('invalidlogin');
                 $client->log_out();
                 redirect(new moodle_url('/login/index.php'));
-            } else if ($mappeduser && ($mappeduser->confirmed || !$issuer->get('requireconfirmation'))) {
+            } else if ($mappeduser && $mappeduser->confirmed) {
                 // Update user fields.
                 $userinfo = $this->update_user($userinfo, $mappeduser);
                 $userwasmapped = true;
@@ -504,7 +503,7 @@ class auth extends \auth_plugin_base {
             redirect(new moodle_url('/login/index.php'));
         }
 
-
+        $issuer = $client->get_issuer();
         if (!$issuer->is_valid_login_domain($oauthemail)) {
             // Trigger login failed event.
             $failurereason = AUTH_LOGIN_UNAUTHORISED;

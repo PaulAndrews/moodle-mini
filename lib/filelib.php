@@ -40,16 +40,6 @@ define('IGNORE_FILE_MERGE', -1);
  */
 define('FILE_AREA_MAX_BYTES_UNLIMITED', -1);
 
-/**
- * Capacity of the draft area bucket when using the leaking bucket technique to limit the draft upload rate.
- */
-define('DRAFT_AREA_BUCKET_CAPACITY', 50);
-
-/**
- * Leaking rate of the draft area bucket when using the leaking bucket technique to limit the draft upload rate.
- */
-define('DRAFT_AREA_BUCKET_LEAK', 0.2);
-
 require_once("$CFG->libdir/filestorage/file_exceptions.php");
 require_once("$CFG->libdir/filestorage/file_storage.php");
 require_once("$CFG->libdir/filestorage/zip_packer.php");
@@ -400,7 +390,7 @@ function file_get_unused_draft_itemid() {
  * @return string|null returns string if $text was passed in, the rewritten $text is returned. Otherwise NULL.
  */
 function file_prepare_draft_area(&$draftitemid, $contextid, $component, $filearea, $itemid, array $options=null, $text=null) {
-    global $CFG, $USER;
+    global $CFG, $USER, $CFG;
 
     $options = (array)$options;
     if (!isset($options['subdirs'])) {
@@ -614,55 +604,6 @@ function file_is_draft_area_limit_reached($draftitemid, $areamaxbytes, $newfiles
         }
     }
     return false;
-}
-
-/**
- * Returns whether a user has reached their draft area upload rate.
- *
- * @param int $userid The user id
- * @return bool
- */
-function file_is_draft_areas_limit_reached(int $userid): bool {
-    global $CFG;
-
-    $capacity = $CFG->draft_area_bucket_capacity ?? DRAFT_AREA_BUCKET_CAPACITY;
-    $leak = $CFG->draft_area_bucket_leak ?? DRAFT_AREA_BUCKET_LEAK;
-
-    $since = time() - floor($capacity / $leak); // The items that were in the bucket before this time are already leaked by now.
-                                                // We are going to be a bit generous to the user when using the leaky bucket
-                                                // algorithm below. We are going to assume that the bucket is empty at $since.
-                                                // We have to do an assumption here unless we really want to get ALL user's draft
-                                                // items without any limit and put all of them in the leaking bucket.
-                                                // I decided to favour performance over accuracy here.
-
-    $fs = get_file_storage();
-    $items = $fs->get_user_draft_items($userid, $since);
-    $items = array_reverse($items); // So that the items are sorted based on time in the ascending direction.
-
-    // We only need to store the time that each element in the bucket is going to leak. So $bucket is array of leaking times.
-    $bucket = [];
-    foreach ($items as $item) {
-        $now = $item->timemodified;
-        // First let's see if items can be dropped from the bucket as a result of leakage.
-        while (!empty($bucket) && ($now >= $bucket[0])) {
-            array_shift($bucket);
-        }
-
-        // Calculate the time that the new item we put into the bucket will be leaked from it, and store it into the bucket.
-        if ($bucket) {
-            $bucket[] = max($bucket[count($bucket) - 1], $now) + (1 / $leak);
-        } else {
-            $bucket[] = $now + (1 / $leak);
-        }
-    }
-
-    // Recalculate the bucket's content based on the leakage until now.
-    $now = time();
-    while (!empty($bucket) && ($now >= $bucket[0])) {
-        array_shift($bucket);
-    }
-
-    return count($bucket) >= $capacity;
 }
 
 /**
@@ -1698,7 +1639,6 @@ function download_file_content($url, $headers=null, $postdata=null, $fullrespons
  *     commonly used in moodle the following groups:
  *       - web_image - image that can be included as <img> in HTML
  *       - image - image that we can parse using GD to find it's dimensions, also used for portfolio format
- *       - optimised_image - image that will be processed and optimised
  *       - video - file that can be imported as video in text editor
  *       - audio - file that can be imported as audio in text editor
  *       - archive - we can extract files from this archive
@@ -2229,7 +2169,7 @@ function readfile_accel($file, $mimetype, $accelerate) {
         if (is_object($file)) {
             $fs = get_file_storage();
             if ($fs->supports_xsendfile()) {
-                if ($fs->xsendfile($file->get_contenthash())) {
+                if ($fs->xsendfile_file($file)) {
                     return;
                 }
             }
@@ -2279,15 +2219,19 @@ function readfile_accel($file, $mimetype, $accelerate) {
             if ($ranges) {
                 if (is_object($file)) {
                     $handle = $file->get_content_file_handle();
+                    if ($handle === false) {
+                        throw new file_exception('storedfilecannotreadfile', $file->get_filename());
+                    }
                 } else {
                     $handle = fopen($file, 'rb');
+                    if ($handle === false) {
+                        throw new file_exception('cannotopenfile', $file);
+                    }
                 }
                 byteserving_send_file($handle, $mimetype, $ranges, $filesize);
             }
         }
     }
-
-    header('Content-Length: '.$filesize);
 
     if ($filesize > 10000000) {
         // for large files try to flush and close all buffers to conserve memory
@@ -2298,11 +2242,21 @@ function readfile_accel($file, $mimetype, $accelerate) {
         }
     }
 
+    // Send this header after we have flushed the buffers so that if we fail
+    // later can remove this because it wasn't sent.
+    header('Content-Length: ' . $filesize);
+
+    if (!empty($_SERVER['REQUEST_METHOD']) and $_SERVER['REQUEST_METHOD'] === 'HEAD') {
+        exit;
+    }
+
     // send the whole file content
     if (is_object($file)) {
         $file->readfile();
     } else {
-        readfile_allow_large($file, $filesize);
+        if (readfile_allow_large($file, $filesize) === false) {
+            throw new file_exception('cannotopenfile', $file);
+        }
     }
 }
 
@@ -4953,8 +4907,29 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null, $offlin
             \core\session\manager::write_close(); // Unlock session during file serving.
             send_stored_file($file, 60*60, 0, $forcedownload, $sendfileoptions);
         }
+    } else if ($component === 'contentbank') {
+        if ($filearea != 'public' || isguestuser()) {
+            send_file_not_found();
+        }
 
-        // ========================================================================================================================
+        if ($context->contextlevel == CONTEXT_SYSTEM || $context->contextlevel == CONTEXT_COURSECAT) {
+            require_login();
+        } else if ($context->contextlevel == CONTEXT_COURSE) {
+            require_login($course);
+        } else {
+            send_file_not_found();
+        }
+
+        $itemid = (int)array_shift($args);
+        $filename = array_pop($args);
+        $filepath = $args ? '/'.implode('/', $args).'/' : '/';
+        if (!$file = $fs->get_file($context->id, $component, $filearea, $itemid, $filepath, $filename) or
+            $file->is_directory()) {
+            send_file_not_found();
+        }
+
+        \core\session\manager::write_close(); // Unlock session during file serving.
+        send_stored_file($file, 0, 0, true, $sendfileoptions); // must force download - security!
     } else if (strpos($component, 'mod_') === 0) {
         $modname = substr($component, 4);
         if (!file_exists("$CFG->dirroot/mod/$modname/lib.php")) {

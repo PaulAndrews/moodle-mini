@@ -63,10 +63,7 @@ Feature: Quiz user override
       | Override user    | Student1 |
       | Attempts allowed | 1        |
     And I press "Save"
-    Then I should see "This override is inactive"
-    And "Edit" "icon" should exist in the "Student One" "table_row"
-    And "copy" "icon" should exist in the "Student One" "table_row"
-    And "Delete" "icon" should exist in the "Student One" "table_row"
+    Then "Edit" "icon" should exist in the "Student One" "table_row"
 
   Scenario: A teacher without accessallgroups permission should only be able to add user override for users that he/she shares groups with,
         when the activity's group mode is to "separate groups"

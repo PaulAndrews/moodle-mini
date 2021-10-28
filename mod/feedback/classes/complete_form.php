@@ -323,7 +323,7 @@ class mod_feedback_complete_form extends moodleform {
 
         // Set default value.
         if ($setdefaultvalue && ($tmpvalue = $this->get_item_value($item))) {
-            $this->_form->setDefault($element->getName(), s($tmpvalue));
+            $this->_form->setDefault($element->getName(), htmlspecialchars_decode($tmpvalue, ENT_QUOTES));
         }
 
         // Freeze if needed.
@@ -399,8 +399,8 @@ class mod_feedback_complete_form extends moodleform {
      */
     protected function add_item_label($item, $element) {
         if (strlen($item->label) && ($this->mode == self::MODE_EDIT || $this->mode == self::MODE_VIEW_TEMPLATE)) {
-            $name = get_string('nameandlabelformat', 'mod_feedback',
-                (object)['label' => format_string($item->label), 'name' => $element->getLabel()]);
+            $name = $element->getLabel();
+            $name = '('.format_string($item->label).') '.$name;
             $element->setLabel($name);
         }
     }

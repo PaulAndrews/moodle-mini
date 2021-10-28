@@ -38,7 +38,7 @@ Feature: Tagging courses
     And I expand all fieldsets
     Then I should see "Mathematics" in the ".form-autocomplete-selection" "css_element"
     And I set the following fields to these values:
-      | Tags | Mathematics, Algebra |
+      | Tags | Algebra |
     And I press "Save and display"
     And I am on "Course 2" course homepage
     And I navigate to "Edit settings" in current page administration
@@ -63,6 +63,7 @@ Feature: Tagging courses
     And I follow "Geometry"
     And I should not see "Course 1"
     And I should see "Course 2"
+    And I log out
 
   Scenario: User can set course tags using separate form
     Given I log in as "admin"
@@ -74,7 +75,7 @@ Feature: Tagging courses
     And I navigate to "Course tags" in current page administration
     Then I should see "Mathematics" in the ".form-autocomplete-selection" "css_element"
     And I set the following fields to these values:
-      | Tags | Mathematics, Algebra |
+      | Tags | Algebra |
     And I press "Save changes"
     And I am on "Course 2" course homepage
     And I navigate to "Course tags" in current page administration
@@ -99,3 +100,4 @@ Feature: Tagging courses
     And I follow "Geometry"
     And I should not see "Course 1"
     And I should see "Course 2"
+    And I log out

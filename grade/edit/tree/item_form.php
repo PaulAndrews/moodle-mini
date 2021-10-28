@@ -181,9 +181,10 @@ class edit_item_form extends moodleform {
 
         /// hiding
         if ($item->cancontrolvisibility) {
-            $mform->addElement('advcheckbox', 'hidden', get_string('hidden', 'grades'), '', [], [0, 1]);
+            // advcheckbox is not compatible with disabledIf!
+            $mform->addElement('checkbox', 'hidden', get_string('hidden', 'grades'));
             $mform->addElement('date_time_selector', 'hiddenuntil', get_string('hiddenuntil', 'grades'), array('optional'=>true));
-            $mform->disabledIf('hidden', 'hiddenuntil[enabled]', 'checked');
+            $mform->disabledIf('hidden', 'hiddenuntil[off]', 'notchecked');
         } else {
             $mform->addElement('static', 'hidden', get_string('hidden', 'grades'),
                     get_string('componentcontrolsvisibility', 'grades'));
