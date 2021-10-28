@@ -277,6 +277,11 @@ $string['confirmcheckfull'] = 'Are you absolutely sure you want to confirm {$a} 
 $string['confirmcoursemove'] = 'Are you sure you want to move this course ({$a->course}) into this category ({$a->category})?';
 $string['considereddigitalminor'] = 'You are too young to create an account on this site.';
 $string['content'] = 'Content';
+$string['contentexport_aboutthiscourse'] = 'Course summary';
+$string['contentexport_coursesummary'] = 'This file is part of the content downloaded from <a href="{$a->courselink}">{$a->coursename}</a>.';
+$string['contentexport_footersummary'] = 'This file is part of the content downloaded from <a href="{$a->courselink}">{$a->coursename}</a> by {$a->userfullname} on {$a->date}.';
+$string['contentexport_modulesummary'] = 'This page is part of the content downloaded from <a href="{$a->modulelink}">{$a->modulename}</a> on {$a->date}. Note that some content and any files larger than {$a->maxfilesize} are not downloaded.';
+$string['contentexport_viewfilename'] = 'View the file {$a}';
 $string['contentbank'] = 'Content bank';
 $string['continue'] = 'Continue';
 $string['continuetocourse'] = 'Click here to enter your course';
@@ -604,7 +609,7 @@ $string['emailalreadysent'] = 'A password reset email has already been sent. Ple
 $string['emailactive'] = 'Email activated';
 $string['emailagain'] = 'Email (again)';
 $string['emailconfirm'] = 'Confirm your account';
-$string['emailconfirmation'] = 'Hi,
+$string['emailconfirmation'] = 'Hi {$a->firstname},
 
 A new account has been requested at \'{$a->sitename}\'
 using your email address.
@@ -642,7 +647,7 @@ $string['emaildisable'] = 'This email address is disabled';
 $string['emaildisableclick'] = 'Click here to disable all email from being sent to this address';
 $string['emaildisplay'] = 'Email display';
 $string['emaildisplay_help'] = 'Privileged users (such as teachers and managers) will always be able to see your email address.';
-$string['emaildisplaycourse'] = 'Allow only other course participants to see my email address';
+$string['emaildisplaycourse'] = 'Allow only other course members to see my email address';
 $string['emaildisplayno'] = 'Hide my email address from non-privileged users';
 $string['emaildisplayyes'] = 'Allow everyone to see my email address';
 $string['emailenable'] = 'This email address is enabled';
@@ -674,7 +679,7 @@ line at the top of your web browser window.
 If you need help, please contact the site administrator,
 {$a->admin}';
 $string['emailpasswordconfirmationsubject'] = '{$a}: Change password confirmation';
-$string['emailpasswordconfirmmaybesent'] = '<p>If you supplied a correct username or unique email address then an email should have been sent to you.</p>
+$string['emailpasswordconfirmmaybesent'] = '<p>If you supplied a correct username or email address then an email should have been sent to you.</p>
    <p>It contains easy instructions to confirm and complete this password change.
 If you continue to have difficulty, please contact the site administrator.</p>';
 $string['emailpasswordconfirmnoemail'] = '<p>The user account you specified does not have a recorded email address.</p>
@@ -1121,6 +1126,7 @@ $string['ip_address'] = 'IP address';
 $string['jump'] = 'Jump';
 $string['jumpto'] = 'Jump to...';
 $string['keep'] = 'Keep';
+$string['labelvalue'] = '{$a->label}: {$a->value}';
 $string['langltr'] = 'Language direction left-to-right';
 $string['langrtl'] = 'Language direction right-to-left';
 $string['language'] = 'Language';
@@ -1174,7 +1180,6 @@ $string['loginstepsnone'] = '<p>Hi!</p>
 <p>All you need to do is make up a username and password and use it in the form on this page!</p>
 <p>If someone else has already chosen your username then you\'ll have to try again using a different username.</p>';
 $string['loginto'] = 'Log in to {$a}';
-$string['logoof'] = 'Logo of {$a}';
 $string['logout'] = 'Log out';
 $string['logoutconfirm'] = 'Do you really want to log out?';
 $string['logs'] = 'Logs';
@@ -1232,6 +1237,7 @@ $string['messageprovider:badgecreatornotice'] = 'Badge creator notifications';
 $string['messageprovider:badgerecipientnotice'] = 'Badge recipient notifications';
 $string['messageprovider:competencyplancomment'] = 'Comment posted on a learning plan';
 $string['messageprovider:competencyusercompcomment'] = 'Comment posted on a competency';
+$string['messageprovider:coursecompleted'] = 'Course completed';
 $string['messageprovider:courserequestapproved'] = 'Course creation request approval notification';
 $string['messageprovider:courserequested'] = 'Course creation request notification';
 $string['messageprovider:courserequestrejected'] = 'Course creation request rejection notification';
@@ -1241,6 +1247,7 @@ $string['messageprovider:gradenotifications'] = 'Grade notifications';
 $string['messageprovider:messagecontactrequests'] = 'Message contact requests notification';
 $string['messageprovider:notices'] = 'Notices about minor problems';
 $string['messageprovider:notices_help'] = 'These are notices that an administrator might be interested in seeing.';
+$string['messageprovider:infected'] = 'Antivirus failure notifications.';
 $string['messageprovider:insights'] = 'Insights generated by prediction models';
 $string['messageprovider:instantmessage'] = 'Personal messages between users';
 $string['messageprovider:instantmessage_help'] = 'This section configures what happens to messages that are sent to you directly from other users on this site.';
@@ -1464,7 +1471,7 @@ $string['normalfilter'] = 'Normal search';
 $string['nosite'] = 'Could not find site-level course';
 $string['nostudentsfound'] = 'No {$a} found';
 $string['nostudentsingroup'] = 'There are no students in this group yet';
-$string['nostudentsyet'] = 'There are no students enrolled in this course.';
+$string['nostudentsyet'] = 'No students enrolled in this course yet';
 $string['nosuchemail'] = 'No such email address';
 $string['notavailable'] = 'Not available';
 $string['notavailablecourse'] = '{$a} is not available';
@@ -1629,6 +1636,13 @@ $string['privacy:metadata:log:module'] = 'module';
 $string['privacy:metadata:log:time'] = 'The time when the action took place';
 $string['privacy:metadata:log:url'] = 'The URL related to the event';
 $string['privacy:metadata:log:userid'] = 'The ID of the user who performed the action';
+$string['privacy:metadata:oauth2_refresh_token'] = 'Refresh token used in OAuth 2.0 communication';
+$string['privacy:metadata:oauth2_refresh_token:issuerid'] = 'The ID of the issuer to which the token corresponds';
+$string['privacy:metadata:oauth2_refresh_token:scopehash'] = 'The ID of the user to whom the token corresponds';
+$string['privacy:metadata:oauth2_refresh_token:token'] = 'The refresh token for the respective scopes and user';
+$string['privacy:metadata:oauth2_refresh_token:timecreated'] = 'The time when the token was created';
+$string['privacy:metadata:oauth2_refresh_token:timemodified'] = 'The time when the token was last updated';
+$string['privacy:metadata:oauth2_refresh_token:userid'] = 'The ID of the user to whom the token corresponds';
 $string['privacy:metadata:task_adhoc'] = 'The status of ad hoc tasks.';
 $string['privacy:metadata:task_adhoc:component'] = 'The component owning the task.';
 $string['privacy:metadata:task_adhoc:nextruntime'] = 'The earliest time to run this task.';
@@ -1917,6 +1931,7 @@ $string['since'] = 'Since';
 $string['sincelast'] = 'since last login';
 $string['site'] = 'Site';
 $string['sitedefault'] = 'Site default';
+$string['sitedefaultspecified'] = 'Site default ({$a})';
 $string['siteerrors'] = 'Site errors';
 $string['sitefiles'] = 'Site files';
 $string['sitefilesused'] = 'Site files used in this course';
@@ -1937,6 +1952,8 @@ $string['sizeb'] = 'bytes';
 $string['sizegb'] = 'GB';
 $string['sizekb'] = 'KB';
 $string['sizemb'] = 'MB';
+$string['sizepb'] = 'PB';
+$string['sizetb'] = 'TB';
 $string['skipped'] = 'Skipped';
 $string['skiptocategorylisting'] = 'Skip to the category listings';
 $string['skiptocourselisting'] = 'Skip to the course listings';
@@ -2097,6 +2114,7 @@ $string['today'] = 'Today';
 $string['todaylogs'] = 'Today\'s logs';
 $string['toeveryone'] = 'to everyone';
 $string['toggleemojipicker'] = 'Toggle emoji picker';
+$string['togglesearch'] = 'Toggle search input';
 $string['toomanybounces'] = 'That email address has had too many bounces. You <b>must</b> change it to continue.';
 $string['toomanytags'] = 'This search included too many tags; some will have been ignored.';
 $string['toomanytoshow'] = 'There are too many users to show.';
@@ -2283,22 +2301,6 @@ $string['yourteacher'] = 'your {$a}';
 $string['yourwordforx'] = 'Your word for \'{$a}\'';
 $string['zippingbackup'] = 'Zipping backup';
 $string['deprecatedeventname'] = '{$a} (no longer in use)';
-
-// Deprecated since Moodle 3.6.
-$string['addedrecip'] = 'Added {$a} new recipient';
-$string['addedrecips'] = 'Added {$a} new recipients';
-$string['allfieldsrequired'] = 'All fields are required';
-$string['backtoparticipants'] = 'Back to participants list';
-$string['currentlyselectedusers'] = 'Currently selected users';
-$string['coursemessage'] = 'Message course users';
-$string['emaildisplayhidden'] = 'Email hidden';
-$string['emailuserhasnone'] = 'There is no email address for the user.';
-$string['formattexttype'] = 'Formatting';
-$string['keepsearching'] = 'Keep searching';
-$string['messagedselectedcountusersfailed'] = 'A problem occurred and {$a} messages have not been sent.';
-$string['messagedselecteduserfailed'] = 'The message was not sent to user {$a->fullname}.';
-$string['previewhtml'] = 'HTML format preview';
-$string['sitemessage'] = 'Message users';
 
 // Deprecated since Moodle 3.9.
 $string['participantscount'] = 'Number of participants: {$a}';

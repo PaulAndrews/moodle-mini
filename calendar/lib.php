@@ -178,6 +178,7 @@ define('CALENDAR_EVENT_TYPE_ACTION', 1);
  * @property string $eventtype The event type
  * @property int $timestart The start time as a timestamp
  * @property int $timeduration The duration of the event in seconds
+ * @property int $timeusermidnight User midnight for the event
  * @property int $visible 1 if the event is visible
  * @property int $uuid ?
  * @property int $sequence ?
@@ -2396,7 +2397,9 @@ function calendar_get_default_courses($courseid = null, $fields = '*', $canmanag
         $prefixedfields = array_map(function($value) {
             return 'c.' . trim(strtolower($value));
         }, $fieldlist);
-
+        if (!in_array('c.visible', $prefixedfields) && !in_array('c.*', $prefixedfields)) {
+            $prefixedfields[] = 'c.visible';
+        }
         $courses = get_courses('all', 'c.shortname', implode(',', $prefixedfields));
     } else {
         $courses = enrol_get_users_courses($userid, true, $fields);
@@ -3204,7 +3207,6 @@ function calendar_update_subscription($subscription) {
  * @return bool true if current user can edit the subscription else false
  */
 function calendar_can_edit_subscription($subscriptionorid) {
-    global $USER;
     if (is_array($subscriptionorid)) {
         $subscription = (object)$subscriptionorid;
     } else if (is_object($subscriptionorid)) {
@@ -3225,7 +3227,7 @@ function calendar_can_edit_subscription($subscriptionorid) {
     calendar_get_allowed_types($allowed, $courseid, null, $category);
     switch ($subscription->eventtype) {
         case 'user':
-            return ($USER->id == $subscription->userid && $allowed->user);
+            return $allowed->user;
         case 'course':
             if (isset($allowed->courses[$courseid])) {
                 return $allowed->courses[$courseid];
@@ -3271,7 +3273,7 @@ function calendar_get_calendar_context($subscription) {
 }
 
 /**
- * Implements callback user_preferences, whitelists preferences that users are allowed to update directly
+ * Implements callback user_preferences, lists preferences that users are allowed to update directly
  *
  * Used in {@see core_user::fill_preferences_cache()}, see also {@see useredit_update_user_preference()}
  *
@@ -3681,11 +3683,10 @@ function calendar_get_timestamp($d, $m, $y, $time = 0) {
  * @return array The data for template and template name.
  */
 function calendar_get_footer_options($calendar) {
-    global $CFG, $USER, $DB, $PAGE;
+    global $CFG, $USER, $PAGE;
 
     // Generate hash for iCal link.
-    $rawhash = $USER->id . $DB->get_field('user', 'password', ['id' => $USER->id]) . $CFG->calendar_exportsalt;
-    $authtoken = sha1($rawhash);
+    $authtoken = calendar_get_export_token($USER);
 
     $renderer = $PAGE->get_renderer('core_calendar');
     $footer = new \core_calendar\external\footer_options_exporter($calendar, $USER->id, $authtoken);
@@ -3918,4 +3919,16 @@ function calendar_internal_update_course_and_group_permission(int $courseid, con
             }
         }
     }
+}
+
+/**
+ * Get the auth token for exporting the given user calendar.
+ * @param stdClass $user The user to export the calendar for
+ *
+ * @return string The export token.
+ */
+function calendar_get_export_token(stdClass $user): string {
+    global $CFG, $DB;
+
+    return sha1($user->id . $DB->get_field('user', 'password', ['id' => $user->id]) . $CFG->calendar_exportsalt);
 }

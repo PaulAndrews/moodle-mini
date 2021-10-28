@@ -62,15 +62,14 @@ if (isguestuser()) {  // Force them to see system default, no editing allowed
     $USER->editing = $edit = 0;  // Just in case
     $context = context_system::instance();
     $PAGE->set_blocks_editing_capability('moodle/my:configsyspages');  // unlikely :)
-    $strguest = get_string('guest');
-    $header = "$SITE->shortname: $strmymoodle ($strguest)";
+    $header = "$SITE->shortname: $strmymoodle (GUEST)";
     $pagetitle = $header;
 
 } else {        // We are trying to view or edit our own My Moodle page
     $userid = $USER->id;  // Owner of the page
     $context = context_user::instance($USER->id);
     $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
-    $header = "$SITE->shortname: $strmymoodle";
+    $header = fullname($USER);
     $pagetitle = $strmymoodle;
 }
 

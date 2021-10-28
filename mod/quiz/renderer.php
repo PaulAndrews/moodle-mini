@@ -294,10 +294,8 @@ class mod_quiz_renderer extends plugin_renderer_base {
             $this->initialise_timer($timerstartvalue, $ispreview);
         }
 
-        return html_writer::tag('div', get_string('timeleft', 'quiz') . ' ' .
-                html_writer::tag('span', '', array('id' => 'quiz-time-left')),
-                array('id' => 'quiz-timer', 'role' => 'timer',
-                    'aria-atomic' => 'true', 'aria-relevant' => 'text'));
+
+        return $this->output->render_from_template('mod_quiz/timer', (object)[]);
     }
 
     /**
@@ -447,6 +445,7 @@ class mod_quiz_renderer extends plugin_renderer_base {
         $output = '';
         $output .= $this->header();
         $output .= $this->quiz_notices($messages);
+        $output .= $this->countdown_timer($attemptobj, time());
         $output .= $this->attempt_form($attemptobj, $page, $slots, $id, $nextpage);
         $output .= $this->footer();
         return $output;
@@ -1247,12 +1246,10 @@ class mod_quiz_renderer extends plugin_renderer_base {
      *
      * @param \core\chart_base $chart The chart.
      * @param string $title The title to display above the graph.
-     * @param array $attrs extra container html attributes.
      * @return string HTML fragment for the graph.
      */
-    public function chart(\core\chart_base $chart, $title, $attrs = []) {
-        return $this->heading($title, 3) . html_writer::tag('div',
-            $this->render($chart), array_merge(['class' => 'graph'], $attrs));
+    public function chart(\core\chart_base $chart, $title) {
+        return $this->heading($title, 3) . html_writer::tag('div', $this->render($chart), array('class' => 'graph'));
     }
 
     /**

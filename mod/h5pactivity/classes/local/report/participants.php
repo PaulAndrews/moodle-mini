@@ -28,7 +28,6 @@ namespace mod_h5pactivity\local\report;
 use mod_h5pactivity\local\report;
 use mod_h5pactivity\local\manager;
 use mod_h5pactivity\local\attempt;
-use core\dml\sql_join;
 use table_sql;
 use moodle_url;
 use html_writer;
@@ -83,9 +82,8 @@ class participants extends table_sql implements report {
         $this->no_sorting('attempts');
         $this->pageable(true);
 
-        $capjoin = $this->manager->get_active_users_join(true);
-
-        // Final SQL.
+        // Set query SQL.
+        $capjoin = get_enrolled_with_capabilities_join($this->manager->get_context(), '', 'mod/h5pactivity:submit');
         $this->set_sql(
             'DISTINCT u.id, u.picture, u.firstname, u.lastname, u.firstnamephonetic, u.lastnamephonetic,
             u.middlename, u.alternatename, u.imagealt, u.email',

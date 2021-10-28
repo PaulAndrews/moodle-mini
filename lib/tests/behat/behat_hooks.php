@@ -290,20 +290,11 @@ EOF;
         if ($session->isStarted()) {
             $session->restart();
         } else {
-            $this->start_session();
+            $session->start();
         }
         if ($this->running_javascript() && $this->getSession()->getDriver()->getWebDriverSessionId() === 'session') {
             throw new DriverException('Unable to create a valid session');
         }
-    }
-
-    /**
-     * Start the Session, applying any initial configuratino required.
-     */
-    protected function start_session(): void {
-        $this->getSession()->start();
-
-        $this->set_test_timeout_factor(1);
     }
 
     /**
@@ -337,6 +328,7 @@ EOF;
             // The `before_subsequent_scenario_start_session` function will restart the session instead.
             return;
         }
+        self::$firstjavascriptscenarioseen = true;
 
         $docsurl = behat_command::DOCS_URL;
         $driverexceptionmsg = <<<EOF
@@ -481,16 +473,6 @@ EOF;
 
         // Run all test with medium (1024x768) screen size, to avoid responsive problems.
         $this->resize_window('medium');
-    }
-
-    /**
-     * Mark the first Javascript Scenario as have been seen.
-     *
-     * @BeforeScenario
-     * @param BeforeScenarioScope $scope scope passed by event fired before scenario.
-     */
-    public function mark_first_js_scenario_as_seen(BeforeScenarioScope $scope) {
-        self::$firstjavascriptscenarioseen = true;
     }
 
     /**
@@ -653,7 +635,7 @@ EOF;
             // the following scenarios. Some browsers already closes the alert, so
             // wrapping in a try & catch.
             try {
-                $this->getSession()->getDriver()->getWebDriver()->switchTo()->alert()->accept();
+                $this->getSession()->getDriver()->getWebDriverSession()->accept_alert();
             } catch (Exception $e) {
                 // Catching the generic one as we never know how drivers reacts here.
             }
@@ -669,24 +651,7 @@ EOF;
      * @AfterScenario
      */
     public function reset_webdriver_between_scenarios(AfterScenarioScope $scope) {
-        try {
-            $this->getSession()->stop();
-        } catch (Exception $e) {
-            $error = <<<EOF
-
-Error while stopping WebDriver: %s (%d) '%s'
-Attempting to continue with test run. Stacktrace follows:
-
-%s
-EOF;
-            error_log(sprintf(
-                $error,
-                get_class($e),
-                $e->getCode(),
-                $e->getMessage(),
-                format_backtrace($e->getTrace(), true)
-            ));
-        }
+        $this->getSession()->stop();
     }
 
     /**

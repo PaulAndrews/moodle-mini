@@ -198,11 +198,8 @@ M.core_availability.form = {
         // If the groupmode and grouping id aren't set, disable it.
         var groupmode = Y.one('#id_groupmode');
         var groupingid = Y.one('#id_groupingid');
-        var groupavailability = Number(this.restrictByGroup.getData('groupavailability')) === 1;
-        var groupingavailability = Number(this.restrictByGroup.getData('groupingavailability')) === 1;
-
-        if ((!groupmode || Number(groupmode.get('value')) === 0 || !groupavailability) &&
-                (!groupingid || Number(groupingid.get('value')) === 0 || !groupingavailability)) {
+        if ((!groupmode || Number(groupmode.get('value')) === 0) &&
+                (!groupingid || Number(groupingid.get('value')) === 0)) {
             this.restrictByGroup.set('disabled', true);
             return;
         }
@@ -223,28 +220,22 @@ M.core_availability.form = {
         e.preventDefault();
 
         // Add the condition.
-        var groupmode = Y.one('#id_groupmode');
         var groupingid = Y.one('#id_groupingid');
-        var groupavailability = Number(this.restrictByGroup.getData('groupavailability')) === 1;
-        var groupingavailability = Number(this.restrictByGroup.getData('groupingavailability')) === 1;
-
         var newChild;
-        if (groupingid && Number(groupingid.get('value')) !== 0 && groupingavailability) {
+        if (groupingid && Number(groupingid.get('value')) !== 0) {
             // Add a grouping restriction if one is specified.
             newChild = new M.core_availability.Item(
                     {type: 'grouping', id: Number(groupingid.get('value'))}, true);
-        } else if (groupmode && groupavailability) {
+        } else {
             // Otherwise just add a group restriction.
             newChild = new M.core_availability.Item({type: 'group'}, true);
         }
 
         // Refresh HTML.
-        if (newChild !== null) {
-            this.rootList.addChild(newChild);
-            this.update();
-            this.rootList.renumber();
-            this.rootList.updateHtml();
-        }
+        this.rootList.addChild(newChild);
+        this.update();
+        this.rootList.renumber();
+        this.rootList.updateHtml();
     }
 };
 
@@ -383,7 +374,7 @@ M.core_availability.List = function(json, root, parentRoot) {
             '<option value="|">' + M.util.get_string('listheader_multi_or', 'availability') + '</option></select></label> ' +
             M.util.get_string('listheader_multi_after', 'availability') + '</span></div>' +
             '<div class="availability-children"></div>' +
-            '<div class="availability-none"><span class="p-x-1">' + M.util.get_string('none', 'moodle') + '</span></div>' +
+            '<div class="availability-none"><span class="px-3">' + M.util.get_string('none', 'moodle') + '</span></div>' +
             '<div class="clearfix mt-1"></div>' +
             '<div class="availability-button"></div></div><div class="clearfix"></div></div>');
     if (!root) {
@@ -1141,7 +1132,7 @@ M.core_availability.EyeIcon.prototype.isHidden = function() {
  * @param {M.core_availability.Item|M.core_availability.List} toDelete Thing to delete
  */
 M.core_availability.DeleteIcon = function(toDelete) {
-    this.span = Y.Node.create('<a class="d-inline-block col-form-label availability-delete p-x-1" href="#" title="' +
+    this.span = Y.Node.create('<a class="d-inline-block col-form-label availability-delete px-3" href="#" title="' +
             M.util.get_string('delete', 'moodle') + '" role="button">');
     var img = Y.Node.create('<img src="' + M.util.image_url('t/delete', 'core') +
             '" alt="' + M.util.get_string('delete', 'moodle') + '" />');

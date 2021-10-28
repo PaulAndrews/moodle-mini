@@ -60,7 +60,7 @@ $preview = '';
 $error = '';
 
 /// Get applicable roles - used in menus etc later on
-$rolenames = role_fix_names(get_profile_roles($context), $context, ROLENAME_ALIAS, true);
+$rolenames = role_fix_names(get_profile_roles($context), $context, ROLENAME_BOTH, true);
 
 /// Create the form
 $editform = new autogroup_form(null, array('roles' => $rolenames));
@@ -232,7 +232,7 @@ if ($editform->is_cancelled()) {
             $newgroup = new stdClass();
             $newgroup->courseid = $data->courseid;
             $newgroup->name     = $group['name'];
-            $newgroup->enablemessaging = $data->enablemessaging ?? 0;
+            $newgroup->enablemessaging = $data->enablemessaging;
             $groupid = groups_create_group($newgroup);
             $createdgroups[] = $groupid;
             foreach($group['members'] as $user) {

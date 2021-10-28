@@ -221,7 +221,7 @@ class api {
         }
 
         // Identity providers.
-        $authsequence = get_enabled_auth_plugins();
+        $authsequence = get_enabled_auth_plugins(true);
         $identityproviders = \auth_plugin_base::get_identity_providers($authsequence);
         $identityprovidersdata = \auth_plugin_base::prepare_identity_providers_for_output($identityproviders, $OUTPUT);
         if (!empty($identityprovidersdata)) {
@@ -302,6 +302,7 @@ class api {
             $settings->tool_mobile_forcelogout = get_config('tool_mobile', 'forcelogout');
             $settings->tool_mobile_customlangstrings = get_config('tool_mobile', 'customlangstrings');
             $settings->tool_mobile_disabledfeatures = get_config('tool_mobile', 'disabledfeatures');
+            $settings->tool_mobile_filetypeexclusionlist = get_config('tool_mobile', 'filetypeexclusionlist');
             $settings->tool_mobile_custommenuitems = get_config('tool_mobile', 'custommenuitems');
             $settings->tool_mobile_apppolicy = get_config('tool_mobile', 'apppolicy');
         }

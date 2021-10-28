@@ -55,19 +55,14 @@ class quiz_overview_privacy_provider_testcase extends \core_privacy\tests\provid
      * Preference does exist.
      */
     public function test_preference_yes() {
+        global $USER;
+
         $this->resetAfterTest();
-
-        // Create test user, add some preferences.
-        $user = $this->getDataGenerator()->create_user();
-        $this->setUser($user);
-
-        set_user_preference('quiz_overview_slotmarks', 1, $user);
-
-        // Switch to admin user (so we can validate preferences of the correct user are being exported).
         $this->setAdminUser();
 
-        // Export test users preferences.
-        provider::export_user_preferences($user->id);
+        set_user_preference('quiz_overview_slotmarks', 1);
+
+        provider::export_user_preferences($USER->id);
 
         $writer = writer::with_context(\context_system::instance());
         $this->assertTrue($writer->has_any_data());
@@ -83,19 +78,14 @@ class quiz_overview_privacy_provider_testcase extends \core_privacy\tests\provid
      * Preference does exist and is no.
      */
     public function test_preference_no() {
-        $this->resetAfterTest();
+        global $USER;
 
-        // Create test user, add some preferences.
-        $user = $this->getDataGenerator()->create_user();
-        $this->setUser($user);
+        $this->resetAfterTest();
+        $this->setAdminUser();
 
         set_user_preference('quiz_overview_slotmarks', 0);
 
-        // Switch to admin user (so we can validate preferences of the correct user are being exported).
-        $this->setAdminUser();
-
-        // Export test users preferences.
-        provider::export_user_preferences($user->id);
+        provider::export_user_preferences($USER->id);
 
         $writer = writer::with_context(\context_system::instance());
         $this->assertTrue($writer->has_any_data());

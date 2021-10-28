@@ -68,6 +68,14 @@ define('COURSE_DB_QUERY_LIMIT', 1000);
 /** Searching for all courses that have no value for the specified custom field. */
 define('COURSE_CUSTOMFIELD_EMPTY', -1);
 
+// Course activity chooser footer default display option.
+define('COURSE_CHOOSER_FOOTER_NONE', 'hidden');
+
+// Download course content options.
+define('DOWNLOAD_COURSE_CONTENT_DISABLED', 0);
+define('DOWNLOAD_COURSE_CONTENT_ENABLED', 1);
+define('DOWNLOAD_COURSE_CONTENT_SITE_DEFAULT', 2);
+
 function make_log_url($module, $url) {
     switch ($module) {
         case 'course':
@@ -634,17 +642,6 @@ function get_category_or_system_context($categoryid) {
     } else {
         return context_system::instance();
     }
-}
-
-/**
- * Returns the list of full course categories to be used in html_writer::select()
- *
- * Calls {@see core_course_category::make_categories_list()} to build the list.
- *
- * @return array array mapping course category id to the display name
- */
-function make_categories_options() {
-    return core_course_category::make_categories_list('', 0, ' / ');
 }
 
 /**
@@ -2019,17 +2016,10 @@ function course_get_cm_move(cm_info $mod, $sr = null) {
             $pixicon = 't/move';
         }
 
-        $attributes = [
-            'class' => 'editing_move',
-            'data-action' => 'move',
-            'data-sectionreturn' => $sr,
-            'title' => $str->move,
-            'aria-label' => $str->move,
-        ];
         return html_writer::link(
-            new moodle_url($baseurl, ['copy' => $mod->id]),
-            $OUTPUT->pix_icon($pixicon, '', 'moodle', ['class' => 'iconsmall']),
-            $attributes
+            new moodle_url($baseurl, array('copy' => $mod->id)),
+            $OUTPUT->pix_icon($pixicon, $str->move, 'moodle', array('class' => 'iconsmall', 'title' => '')),
+            array('class' => 'editing_move', 'data-action' => 'move', 'data-sectionreturn' => $sr)
         );
     }
     return '';
@@ -2118,7 +2108,7 @@ function move_courses($courseids, $categoryid) {
         $course->id = $dbcourse->id;
         $course->timemodified = time();
         $course->category  = $category->id;
-        $course->sortorder = $category->sortorder + MAX_COURSES_IN_CATEGORY - $i++;
+        $course->sortorder = $category->sortorder + get_max_courses_in_category() - $i++;
         if ($category->visible == 0) {
             // Hide the course when moving into hidden category, do not update the visibleold flag - we want to get
             // to previous state if somebody unhides the category.
@@ -4720,38 +4710,20 @@ function course_get_recent_courses(int $userid = null, int $limit = 0, int $offs
     $basefields = array('id', 'idnumber', 'summary', 'summaryformat', 'startdate', 'enddate', 'category',
             'shortname', 'fullname', 'timeaccess', 'component', 'visible');
 
+    $sort = trim($sort);
     if (empty($sort)) {
         $sort = 'timeaccess DESC';
     } else {
-        // The SQL string for sorting can define sorting by multiple columns.
         $rawsorts = explode(',', $sort);
         $sorts = array();
-        // Validate and trim the sort parameters in the SQL string for sorting.
         foreach ($rawsorts as $rawsort) {
-            $sort = trim($rawsort);
-            $sortparams = explode(' ', $sort);
-            // A valid sort statement can not have more than 2 params (ex. 'summary desc' or 'timeaccess').
-            if (count($sortparams) > 2) {
-                throw new invalid_parameter_exception(
-                    'Invalid structure of the sort parameter, allowed structure: fieldname [ASC|DESC].');
-            }
-            $sortfield = trim($sortparams[0]);
-            // Validate the value which defines the field to sort by.
-            if (!in_array($sortfield, $basefields)) {
-                throw new invalid_parameter_exception('Invalid field in the sort parameter, allowed fields: ' .
-                    implode(', ', $basefields) . '.');
-            }
-            $sortdirection = isset($sortparams[1]) ? trim($sortparams[1]) : '';
-            // Validate the value which defines the sort direction (if present).
-            $allowedsortdirections = ['asc', 'desc'];
-            if (!empty($sortdirection) && !in_array(strtolower($sortdirection), $allowedsortdirections)) {
-                throw new invalid_parameter_exception('Invalid sort direction in the sort parameter, allowed values: ' .
-                    implode(', ', $allowedsortdirections) . '.');
-            }
-            $sorts[] = $sort;
+            $rawsort = trim($rawsort);
+            $sorts[] = trim($rawsort);
         }
         $sort = implode(',', $sorts);
     }
+
+    $orderby = "ORDER BY $sort";
 
     $ctxfields = context_helper::get_preload_record_columns_sql('ctx');
 
@@ -4771,26 +4743,26 @@ function course_get_recent_courses(int $userid = null, int $limit = 0, int $offs
               JOIN {user_lastaccess} ul
                    ON ul.courseid = c.id
             $favsql
-         LEFT JOIN {enrol} eg ON eg.courseid = c.id AND eg.status = :statusenrolg AND eg.enrol = :guestenrol
              WHERE ul.userid = :userid
                AND c.visible = :visible
-               AND (eg.id IS NOT NULL
-                    OR EXISTS (SELECT e.id
+               AND EXISTS (SELECT e.id
                              FROM {enrol} e
-                             JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                        LEFT JOIN {user_enrolments} ue ON ue.enrolid = e.id
                             WHERE e.courseid = c.id
                               AND e.status = :statusenrol
-                              AND ue.status = :status
-                              AND ue.userid = :userid2
-                              AND ue.timestart < :now1
-                              AND (ue.timeend = 0 OR ue.timeend > :now2)
-                          ))
-          ORDER BY $sort";
+                              AND ((ue.status = :status
+                                    AND ue.userid = ul.userid
+                                    AND ue.timestart < :now1
+                                    AND (ue.timeend = 0 OR ue.timeend > :now2)
+                                   )
+                                   OR e.enrol = :guestenrol
+                                  )
+                          )
+            $orderby";
 
     $now = round(time(), -2); // Improves db caching.
     $params = ['userid' => $userid, 'contextlevel' => CONTEXT_COURSE, 'visible' => 1, 'status' => ENROL_USER_ACTIVE,
-               'statusenrol' => ENROL_INSTANCE_ENABLED, 'guestenrol' => 'guest', 'now1' => $now, 'now2' => $now,
-               'userid2' => $userid, 'statusenrolg' => ENROL_INSTANCE_ENABLED] + $favparams;
+               'statusenrol' => ENROL_INSTANCE_ENABLED, 'guestenrol' => 'guest', 'now1' => $now, 'now2' => $now] + $favparams;
 
     $recentcourses = $DB->get_records_sql($sql, $params, $offset, $limit);
 

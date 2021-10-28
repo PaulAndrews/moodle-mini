@@ -258,11 +258,6 @@ class grade_item extends grade_object {
     public $dependson_cache = null;
 
     /**
-     * @var bool If we regrade this item should we mark it as overridden?
-     */
-    public $markasoverriddenwhengraded = true;
-
-    /**
      * Constructor. Optionally (and by default) attempts to fetch corresponding row from the database
      *
      * @param array $params An array with required parameters for this grade object.
@@ -418,6 +413,12 @@ class grade_item extends grade_object {
         $this->delete_all_grades($source);
         $success = parent::delete($source);
         $transaction->allow_commit();
+
+        if ($success) {
+            $event = \core\event\grade_item_deleted::create_from_grade_item($this);
+            $event->trigger();
+        }
+
         return $success;
     }
 
@@ -1657,7 +1658,7 @@ class grade_item extends grade_object {
             return $this->dependson_cache;
         }
 
-        if ($this->is_locked() && !$this->is_category_item()) {
+        if ($this->is_locked()) {
             // locked items do not need to be regraded
             $this->dependson_cache = array();
             return $this->dependson_cache;
@@ -1835,7 +1836,7 @@ class grade_item extends grade_object {
 
         // changed grade?
         if ($finalgrade !== false) {
-            if ($this->is_overridable_item() && $this->markasoverriddenwhengraded) {
+            if ($this->is_overridable_item()) {
                 $grade->overridden = time();
             }
 

@@ -408,7 +408,6 @@ END;
         $expectedq->responsefieldlines = 15;
         $expectedq->attachments = 0;
         $expectedq->attachmentsrequired = 0;
-        $expectedq->filetypeslist = null;
         $expectedq->graderinfo['text'] = '';
         $expectedq->graderinfo['format'] = FORMAT_MOODLE;
         $expectedq->responsetemplate['text'] = '';
@@ -468,7 +467,6 @@ END;
         $expectedq->responsefieldlines = 42;
         $expectedq->attachments = -1;
         $expectedq->attachmentsrequired = 1;
-        $expectedq->filetypeslist = null;
         $expectedq->graderinfo['text'] = '<p>Grade <b>generously</b>!</p>';
         $expectedq->graderinfo['format'] = FORMAT_HTML;
         $expectedq->responsetemplate['text'] = '<p>Here is something <b>really</b> interesting.</p>';
@@ -505,7 +503,6 @@ END;
         $qdata->options->graderinfoformat = FORMAT_HTML;
         $qdata->options->responsetemplate = '<p>Here is something <b>really</b> interesting.</p>';
         $qdata->options->responsetemplateformat = FORMAT_HTML;
-        $qdata->options->filetypeslist = '.pdf,.zip.,.docx';
         $exporter = new qformat_xml();
         $xml = $exporter->writequestion($qdata);
 
@@ -529,7 +526,6 @@ END;
     <responsefieldlines>42</responsefieldlines>
     <attachments>-1</attachments>
     <attachmentsrequired>1</attachmentsrequired>
-    <filetypeslist>.pdf,.zip.,.docx</filetypeslist>
     <graderinfo format="html">
       <text><![CDATA[<p>Grade <b>generously</b>!</p>]]></text>
     </graderinfo>

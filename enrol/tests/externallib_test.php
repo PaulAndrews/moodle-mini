@@ -351,7 +351,7 @@ class core_enrol_externallib_testcase extends externallib_advanced_testcase {
                 $viewed[] = $createdusers[$enrolleduser['id']];
             }
             // Verify viewed matches canview expectation (using canonicalize to ignore ordering).
-            $this->assertEquals($canview, $viewed, "Problem checking visible users for '{$createdusers[$USER->id]}'", 0, 1, true);
+            $this->assertEqualsCanonicalizing($canview, $viewed, "Problem checking visible users for '{$createdusers[$USER->id]}'");
         }
     }
 
@@ -519,81 +519,6 @@ class core_enrol_externallib_testcase extends externallib_advanced_testcase {
         $enrolledincourses = external_api::clean_returnvalue(core_enrol_external::get_users_courses_returns(), $enrolledincourses);
 
         $this->assertEquals(0, $enrolledincourses[0]['lastaccess']); // I can't see this, hidden by global setting.
-    }
-
-    /**
-     * Test that get_users_courses respects the capability to view participants when viewing courses of other user
-     */
-    public function test_get_users_courses_can_view_participants(): void {
-        global $DB;
-
-        $this->resetAfterTest();
-
-        $course = $this->getDataGenerator()->create_course();
-        $context = context_course::instance($course->id);
-
-        $user1 = $this->getDataGenerator()->create_and_enrol($course, 'student');
-        $user2 = $this->getDataGenerator()->create_and_enrol($course, 'student');
-
-        $this->setUser($user1);
-
-        $courses = core_enrol_external::clean_returnvalue(
-            core_enrol_external::get_users_courses_returns(),
-            core_enrol_external::get_users_courses($user2->id, false)
-        );
-
-        $this->assertCount(1, $courses);
-        $this->assertEquals($course->id, reset($courses)['id']);
-
-        // Prohibit the capability for viewing course participants.
-        $studentrole = $DB->get_field('role', 'id', ['shortname' => 'student']);
-        assign_capability('moodle/course:viewparticipants', CAP_PROHIBIT, $studentrole, $context->id);
-
-        $courses = core_enrol_external::clean_returnvalue(
-            core_enrol_external::get_users_courses_returns(),
-            core_enrol_external::get_users_courses($user2->id, false)
-        );
-        $this->assertEmpty($courses);
-    }
-
-    /*
-     * Test that get_users_courses respects the capability to view a users profile when viewing courses of other user
-     */
-    public function test_get_users_courses_can_view_profile(): void {
-        $this->resetAfterTest();
-
-        $course = $this->getDataGenerator()->create_course([
-            'groupmode' => VISIBLEGROUPS,
-        ]);
-
-        $user1 = $this->getDataGenerator()->create_and_enrol($course, 'student');
-        $user2 = $this->getDataGenerator()->create_and_enrol($course, 'student');
-
-        // Create separate groups for each of our students.
-        $group1 = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
-        groups_add_member($group1, $user1);
-        $group2 = $this->getDataGenerator()->create_group(['courseid' => $course->id]);
-        groups_add_member($group2, $user2);
-
-        $this->setUser($user1);
-
-        $courses = core_enrol_external::clean_returnvalue(
-            core_enrol_external::get_users_courses_returns(),
-            core_enrol_external::get_users_courses($user2->id, false)
-        );
-
-        $this->assertCount(1, $courses);
-        $this->assertEquals($course->id, reset($courses)['id']);
-
-        // Change to separate groups mode, so students can't view information about each other in different groups.
-        $course->groupmode = SEPARATEGROUPS;
-        update_course($course);
-
-        $courses = core_enrol_external::clean_returnvalue(
-            core_enrol_external::get_users_courses_returns(),
-            core_enrol_external::get_users_courses($user2->id, false)
-        );
-        $this->assertEmpty($courses);
     }
 
     /**
@@ -842,8 +767,6 @@ class core_enrol_externallib_testcase extends externallib_advanced_testcase {
     /**
      * Test get_enrolled_users from core_enrol_external with capability to
      * viewparticipants removed.
-     *
-     * @expectedException moodle_exception
      */
     public function test_get_enrolled_users_without_capability() {
         $capability = 'moodle/course:viewparticipants';
@@ -851,6 +774,7 @@ class core_enrol_externallib_testcase extends externallib_advanced_testcase {
 
         // Call without required capability.
         $this->unassignUserCapability($capability, $data->context->id, $data->roleid);
+        $this->expectException(moodle_exception::class);
         $categories = core_enrol_external::get_enrolled_users($data->course->id);
     }
 
@@ -1226,10 +1150,9 @@ class core_enrol_externallib_testcase extends externallib_advanced_testcase {
                 core_enrol_external::submit_user_enrolment_form($querystring)
         );
 
-        $this->assertEquals(
+        $this->assertEqualsCanonicalizing(
                 ['result' => $expectedresult, 'validationerror' => $validationerror],
-                $result,
-                '', 0.0, 10, true);
+                $result);
 
         if ($result['result']) {
             $ue = $DB->get_record('user_enrolments', ['id' => $ueid], '*', MUST_EXIST);

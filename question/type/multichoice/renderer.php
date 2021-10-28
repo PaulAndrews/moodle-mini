@@ -104,11 +104,7 @@ abstract class qtype_multichoice_renderer_base extends qtype_with_combined_feedb
                 ));
             }
 
-            $questionnumber = '';
-            if ($question->answernumbering !== 'none') {
-                $questionnumber = html_writer::span(
-                        $this->number_in_style($value, $question->answernumbering), 'answernumber');
-            }
+            $questionnumber = html_writer::span($this->number_in_style($value, $question->answernumbering), 'answernumber');
             $answertext = $question->format_text($ans->answer, $ans->answerformat, $qa, 'question', 'answer', $ansid);
             $questionanswer = html_writer::div($answertext, 'flex-fill ml-1');
 

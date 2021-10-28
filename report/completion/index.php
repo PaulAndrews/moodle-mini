@@ -546,7 +546,7 @@ foreach ($progress as $user) {
     if ($csv) {
         $row = array();
         $row[] = $user->id;
-        $row[] = fullname($user, has_capability('moodle/site:viewfullnames', $context));
+        $row[] = fullname($user);
         foreach ($extrafields as $field) {
             $row[] = $user->{$field};
         }
@@ -559,8 +559,7 @@ foreach ($progress as $user) {
             $userurl = new moodle_url('/user/view.php', array('id' => $user->id, 'course' => $course->id));
         }
 
-        print '<th scope="row"><a href="' . $userurl->out() . '">' .
-            fullname($user, has_capability('moodle/site:viewfullnames', $context)) . '</a></th>';
+        print '<th scope="row"><a href="'.$userurl->out().'">'.fullname($user).'</a></th>';
         foreach ($extrafields as $field) {
             echo '<td>'.s($user->{$field}).'</td>';
         }

@@ -146,7 +146,11 @@ class restore_gradebook_structure_step extends restore_structure_step {
 
         $paths[] = new restore_path_element('attributes', '/gradebook/attributes');
         $paths[] = new restore_path_element('grade_category', '/gradebook/grade_categories/grade_category');
-        $paths[] = new restore_path_element('grade_item', '/gradebook/grade_items/grade_item');
+
+        $gradeitem = new restore_path_element('grade_item', '/gradebook/grade_items/grade_item');
+        $paths[] = $gradeitem;
+        $this->add_plugin_structure('local', $gradeitem);
+
         if ($userinfo) {
             $paths[] = new restore_path_element('grade_grade', '/gradebook/grade_items/grade_item/grade_grades/grade_grade');
         }
@@ -1875,6 +1879,11 @@ class restore_course_structure_step extends restore_structure_step {
 
         } else {
             $data->idnumber = '';
+        }
+
+        // If we restore a course from this site, let's capture the original course id.
+        if ($isnewcourse && $this->get_task()->is_samesite()) {
+            $data->originalcourseid = $this->get_task()->get_old_courseid();
         }
 
         // Any empty value for course->hiddensections will lead to 0 (default, show collapsed).
@@ -4046,30 +4055,9 @@ class restore_contentbankcontent_structure_step extends restore_structure_step {
         $exists = $DB->record_exists('contentbank_content', $params);
         if (!$exists) {
             $params['configdata'] = $data->configdata;
-            $params['timemodified'] = time();
-
-            // Trying to map users. Users cannot always be mapped, e.g. when copying.
             $params['usercreated'] = $this->get_mappingid('user', $data->usercreated);
-            if (!$params['usercreated']) {
-                // Leave the content creator unchanged when we are restoring the same site.
-                // Otherwise use current user id.
-                if ($this->task->is_samesite()) {
-                    $params['usercreated'] = $data->usercreated;
-                } else {
-                    $params['usercreated'] = $this->task->get_userid();
-                }
-            }
             $params['usermodified'] = $this->get_mappingid('user', $data->usermodified);
-            if (!$params['usermodified']) {
-                // Leave the content modifier unchanged when we are restoring the same site.
-                // Otherwise use current user id.
-                if ($this->task->is_samesite()) {
-                    $params['usermodified'] = $data->usermodified;
-                } else {
-                    $params['usermodified'] = $this->task->get_userid();
-                }
-            }
-
+            $params['timemodified'] = time();
             $newitemid = $DB->insert_record('contentbank_content', $params);
             $this->set_mapping('contentbank_content', $oldid, $newitemid, true);
         }

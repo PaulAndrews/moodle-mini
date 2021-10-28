@@ -161,60 +161,14 @@ class fetch_test extends advanced_testcase {
         $course = $forum->get_course_record();
         $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
         $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
-
-        $this->execute_and_assert_fetch($forum, $teacher, $teacher, $student);
-    }
-
-    /**
-     * Class mates should not get other's grades.
-     */
-    public function test_execute_fetch_does_not_return_data_to_other_students(): void {
-        $this->resetAfterTest();
-
-        $forum = $this->get_forum_instance([
-            // Negative numbers mean a scale.
-            'grade_forum' => 5,
-        ]);
-        $course = $forum->get_course_record();
-        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
-        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
-        $evilstudent = $this->getDataGenerator()->create_and_enrol($course, 'student');
-
-        $this->expectException(\required_capability_exception::class);
-        $this->execute_and_assert_fetch($forum, $evilstudent, $teacher, $student);
-    }
-
-    /**
-     * Grades can be returned to graded user.
-     */
-    public function test_execute_fetch_return_data_to_graded_user(): void {
-        $this->resetAfterTest();
-
-        $forum = $this->get_forum_instance([
-            // Negative numbers mean a scale.
-            'grade_forum' => 5,
-        ]);
-        $course = $forum->get_course_record();
-        $teacher = $this->getDataGenerator()->create_and_enrol($course, 'teacher');
-        $student = $this->getDataGenerator()->create_and_enrol($course, 'student');
-
-        $this->execute_and_assert_fetch($forum, $student, $teacher, $student);
-    }
-
-    /**
-     * Executes the fetch method with the given users and returns the result.
-     */
-    private function execute_and_assert_fetch ($forum, $fetcheruser, $grader, $gradeduser) {
-        $this->setUser($grader);
+        $this->setUser($teacher);
 
         $gradeitem = component_gradeitem::instance('mod_forum', $forum->get_context(), 'forum');
-        $gradeitem->store_grade_from_formdata($gradeduser, $grader, (object) [
+        $gradeitem->store_grade_from_formdata($student, $teacher, (object) [
             'grade' => 4,
         ]);
 
-        $this->setUser($fetcheruser);
-
-        $result = fetch::execute('mod_forum', (int) $forum->get_context()->id, 'forum', (int) $gradeduser->id);
+        $result = fetch::execute('mod_forum', (int) $forum->get_context()->id, 'forum', (int) $student->id);
         $result = external_api::clean_returnvalue(fetch::execute_returns(), $result);
 
         $this->assertIsArray($result);
@@ -246,9 +200,7 @@ class fetch_test extends advanced_testcase {
         $this->assertEquals(5, $result['grade']['maxgrade']);
 
         $this->assertArrayHasKey('gradedby', $result['grade']);
-        $this->assertEquals(fullname($grader), $result['grade']['gradedby']);
-
-        return $result;
+        $this->assertEquals(fullname($teacher), $result['grade']['gradedby']);
     }
 
     /**

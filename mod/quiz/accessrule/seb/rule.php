@@ -454,6 +454,7 @@ class quizaccess_seb extends quiz_access_rule_base {
      */
     public function setup_attempt_page($page) {
         $page->set_title($this->quizobj->get_course()->shortname . ': ' . $page->title);
+        $page->set_cacheable(false);
         $page->set_popup_notification_allowed(false); // Prevent message notifications.
         $page->set_heading($page->title);
         $page->set_pagelayout('secure');
@@ -530,15 +531,11 @@ class quizaccess_seb extends quiz_access_rule_base {
      * @return string A link to launch Safe Exam Browser.
      */
     private function get_launch_seb_button() : string {
-        // Rendering as a href and not as button in a form to circumvent browser warnings for sending to URL with unknown protocol.
+        global $OUTPUT;
+
         $seblink = \quizaccess_seb\link_generator::get_link($this->quiz->cmid, true, is_https());
 
-        $buttonlink = html_writer::start_tag('div', array('class' => 'singlebutton'));
-        $buttonlink .= html_writer::link($seblink, get_string('seblinkbutton', 'quizaccess_seb'),
-            ['class' => 'btn btn-secondary', 'title' => get_string('seblinkbutton', 'quizaccess_seb')]);
-        $buttonlink .= html_writer::end_tag('div');
-
-        return $buttonlink;
+        return $OUTPUT->single_button($seblink, get_string('seblinkbutton', 'quizaccess_seb'), 'get');
     }
 
     /**
@@ -547,15 +544,11 @@ class quizaccess_seb extends quiz_access_rule_base {
      * @return string A link to launch Safe Exam Browser.
      */
     private function get_download_config_button() : string {
-        // Rendering as a href and not as button in a form to circumvent browser warnings for sending to URL with unknown protocol.
+        global $OUTPUT;
+
         $httplink = \quizaccess_seb\link_generator::get_link($this->quiz->cmid, false, is_https());
 
-        $buttonlink = html_writer::start_tag('div', array('class' => 'singlebutton'));
-        $buttonlink .= html_writer::link($httplink, get_string('httplinkbutton', 'quizaccess_seb'),
-            ['class' => 'btn btn-secondary', 'title' => get_string('httplinkbutton', 'quizaccess_seb')]);
-        $buttonlink .= html_writer::end_tag('div');
-
-        return $buttonlink;
+        return $OUTPUT->single_button($httplink, get_string('httplinkbutton', 'quizaccess_seb'), 'get');
     }
 
     /**

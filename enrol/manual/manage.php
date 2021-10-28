@@ -188,9 +188,7 @@ $removeenabled = $canunenrol ? '' : 'disabled="disabled"';
       </td>
       <td id="buttonscell">
           <div id="addcontrols">
-              <input class="btn btn-secondary" name="add" <?php echo $addenabled; ?> id="add" type="submit"
-                     value="<?php echo $OUTPUT->larrow() . '&nbsp;' . get_string('add'); ?>"
-                     title="<?php print_string('add'); ?>" /><br />
+              <input name="add" <?php echo $addenabled; ?> id="add" type="submit" value="<?php echo $OUTPUT->larrow().'&nbsp;'.get_string('add'); ?>" title="<?php print_string('add'); ?>" /><br />
 
               <div class="enroloptions">
 
@@ -207,9 +205,7 @@ $removeenabled = $canunenrol ? '' : 'disabled="disabled"';
           </div>
 
           <div id="removecontrols">
-              <input class="btn btn-secondary" name="remove" id="remove" <?php echo $removeenabled; ?> type="submit"
-                     value="<?php echo get_string('remove') . '&nbsp;' . $OUTPUT->rarrow(); ?>"
-                     title="<?php print_string('remove'); ?>" />
+              <input name="remove" id="remove" <?php echo $removeenabled; ?> type="submit" value="<?php echo get_string('remove').'&nbsp;'.$OUTPUT->rarrow(); ?>" title="<?php print_string('remove'); ?>" />
           </div>
       </td>
       <td id="potentialcell">

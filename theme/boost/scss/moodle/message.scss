@@ -659,9 +659,8 @@ $message-day-color: color-yiq($message-app-bg) !default;
         height: 100%;
         margin-top: 0;
         .conversationcontainer {
-            .section {
-                max-height: calc(100vh - 50px);
-            }
+            max-height: calc(100vh - 50px);
+            overflow: auto;
         }
         div[role="main"] {
             height: 100%;

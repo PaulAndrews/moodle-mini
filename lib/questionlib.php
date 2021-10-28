@@ -1222,7 +1222,7 @@ function add_indented_names($categories, $nochildrenof = -1) {
 function question_category_select_menu($contexts, $top = false, $currentcat = 0,
         $selected = "", $nochildrenof = -1) {
     $categoriesarray = question_category_options($contexts, $top, $currentcat,
-            false, $nochildrenof, false);
+            false, $nochildrenof);
     if ($selected) {
         $choose = '';
     } else {
@@ -1386,11 +1386,10 @@ function get_categories_for_contexts($contexts, $sortorder = 'parent, sortorder,
  * @param int $currentcat
  * @param bool $popupform
  * @param int $nochildrenof
- * @param boolean $escapecontextnames Whether the returned name of the thing is to be HTML escaped or not.
  * @return array
  */
 function question_category_options($contexts, $top = false, $currentcat = 0,
-        $popupform = false, $nochildrenof = -1, $escapecontextnames = true) {
+        $popupform = false, $nochildrenof = -1) {
     global $CFG;
     $pcontexts = array();
     foreach ($contexts as $context) {
@@ -1411,7 +1410,7 @@ function question_category_options($contexts, $top = false, $currentcat = 0,
     $categoriesarray = array();
     foreach ($pcontexts as $contextid) {
         $context = context::instance_by_id($contextid);
-        $contextstring = $context->get_context_name(true, true, $escapecontextnames);
+        $contextstring = $context->get_context_name(true, true);
         foreach ($categories as $category) {
             if ($category->contextid == $contextid) {
                 $cid = $category->id;
@@ -1469,15 +1468,14 @@ function question_add_context_in_key($categories) {
  * Finds top categories in the given categories hierarchy and replace their name with a proper localised string.
  *
  * @param array $categories An array of question categories.
- * @param boolean $escape Whether the returned name of the thing is to be HTML escaped or not.
  * @return array The same question category list given to the function, with the top category names being translated.
  */
-function question_fix_top_names($categories, $escape = true) {
+function question_fix_top_names($categories) {
 
     foreach ($categories as $id => $category) {
         if ($category->parent == 0) {
             $context = context::instance_by_id($category->contextid);
-            $categories[$id]->name = get_string('topfor', 'question', $context->get_context_name(false, false, $escape));
+            $categories[$id]->name = get_string('topfor', 'question', $context->get_context_name(false));
         }
     }
 

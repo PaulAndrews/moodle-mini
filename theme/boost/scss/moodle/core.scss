@@ -5,6 +5,8 @@
 // want white default colour.
 $bg-inverse-link-color: #fff !default;
 
+$font-size-xs: ($font-size-base * .75) !default;
+
 #region-main {
     overflow-x: auto;
     overflow-y: visible;
@@ -208,6 +210,18 @@ button.close,
     list-style: none;
     margin: 0;
     padding: 0;
+}
+
+.section li.movehere a {
+    display: block;
+    width: 100%;
+    height: 2rem;
+    border: 2px dashed $gray-800;
+}
+
+.editing .course-content .hidden.sectionname {
+    visibility: hidden;
+    display: initial;
 }
 
 .inline,
@@ -570,7 +584,7 @@ a.skip:active {
 
 // My Moodle
 .path-my .coursebox {
-    margin: $spacer-y 0;
+    margin: $spacer 0;
     padding: 0;
 
     .overview {
@@ -1208,7 +1222,7 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 
 /* Moodle Dialogue Settings (moodle-core-dialogue)  */
 .moodle-dialogue-base .moodle-dialogue-lightbox {
-    background-color: $gray;
+    background-color: $gray-700;
 }
 
 // Prevent adding backdrops to popups in popups.
@@ -1242,6 +1256,12 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 
 .moodle-dialogue-base .moodle-dialogue-fullscreen .moodle-dialogue-content {
     overflow: auto;
+}
+
+.moodle-dialogue-base .moodle-dialogue-fullscreen .closebutton {
+    width: 28px;
+    height: 16px;
+    background-size: 100%;
 }
 
 .moodle-dialogue-base .moodle-dialogue-wrap {
@@ -1627,6 +1647,9 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
     .carousel-item .loading-icon .icon {
         margin: 1em auto;
     }
+    .searchbar {
+        width: 100%;
+    }
 }
 
 .modchooser .modal-footer {
@@ -1643,19 +1666,6 @@ body#page-lib-editor-tinymce-plugins-moodlemedia-preview {
 
 .modchoosercontainer.noscroll {
     overflow-y: hidden;
-}
-
-.modchooser .searchcontainer .searchbar .input-group-append {
-    align-items: center;
-
-    i {
-        color: #868e96;
-        margin: 0;
-        vertical-align: middle;
-        font-size: 20px;
-        height: 20px;
-        width: 20px;
-    }
 }
 
 .modchoosercontainer .optionscontainer,
@@ -1866,13 +1876,10 @@ ul.badges {
 }
 
 .badges li .expireimage {
-    background-image: url([[pix:i/expired]]);
-    background-repeat: no-repeat;
-    background-size: 100px 100px;
     width: 100px;
     height: 100px;
     left: 25px;
-    top: 15px;
+    top: 0;
     position: absolute;
     z-index: 10;
     opacity: 0.85;
@@ -1890,9 +1897,6 @@ ul.badges {
     margin-bottom: 20px;
 
     .expireimage {
-        background-image: url([[pix:i/expired]]);
-        background-repeat: no-repeat;
-        background-size: 100px 100px;
         width: 100px;
         height: 100px;
         left: 0;
@@ -2031,6 +2035,15 @@ img#persona_signin {
 /** Navbar logo. */
 nav.navbar .logo img {
     max-height: 35px;
+}
+
+.nav.usernav {
+    .nav-item {
+        display: flex;
+    }
+    .usermenu .dropdown-toggle {
+        padding: 0 0.5rem;
+    }
 }
 
 /** Header-bar styles **/
@@ -2359,7 +2372,7 @@ $footer-link-color: $bg-inverse-link-color !default;
 .sr-only-focusable {
     &:active,
     &:focus {
-        z-index: $zindex-navbar-fixed + 1;
+        z-index: 1031;
         position: fixed;
         background: #fff;
         padding: 7px;
@@ -2473,10 +2486,6 @@ body.h5p-embed {
     overflow-wrap: break-word !important; /* stylelint-disable-line declaration-no-important */
 }
 
-.word-break {
-    word-break: break-word !important; /* stylelint-disable-line declaration-no-important */
-}
-
 .z-index-0 {
     z-index: 0 !important; /* stylelint-disable-line declaration-no-important */
 }
@@ -2489,8 +2498,25 @@ body.h5p-embed {
 .float-left {
     float: left !important; /* stylelint-disable-line declaration-no-important */
 }
+
 .float-right {
     float: right !important; /* stylelint-disable-line declaration-no-important */
+}
+
+.img-responsive {
+    @include img-fluid();
+}
+
+input[disabled] {
+    cursor: not-allowed;
+}
+
+.custom-select {
+    width: auto;
+}
+
+.fade.in {
+    opacity: 1;
 }
 
 .clamp-2 {
@@ -2708,4 +2734,8 @@ $picker-emojis-per-row: 7 !default;
             border-width: 0.125rem;
         }
     }
+}
+.core_payment_gateways_modal .custom-control-label::before,
+.core_payment_gateways_modal .custom-control-label::after {
+    top: 45%;
 }

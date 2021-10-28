@@ -1799,7 +1799,8 @@ function quiz_attempt_submitted_handler($event) {
 
     // Update completion state.
     $completion = new completion_info($course);
-    if ($completion->is_enabled($cm) && ($quiz->completionattemptsexhausted || $quiz->completionpass)) {
+    if ($completion->is_enabled($cm) &&
+        ($quiz->completionattemptsexhausted || $quiz->completionpass || $quiz->completionminattempts)) {
         $completion->update_state($cm, COMPLETION_COMPLETE, $event->userid);
     }
     return quiz_send_notification_messages($course, $quiz, $attempt,
@@ -2069,7 +2070,7 @@ function quiz_question_tostring($question, $showicon = false, $showquestiontext 
     if ($showidnumber && $question->idnumber !== null && $question->idnumber !== '') {
         $result .= ' ' . html_writer::span(
                 html_writer::span(get_string('idnumber', 'question'), 'accesshide') .
-                ' ' . s($question->idnumber), 'badge badge-primary');
+                ' ' . $question->idnumber, 'badge badge-primary');
     }
 
     // Question tags.

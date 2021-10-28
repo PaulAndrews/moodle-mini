@@ -488,7 +488,10 @@ class backup_course_structure_step extends backup_structure_step {
 
         $course->annotate_files('course', 'summary', null);
         $course->annotate_files('course', 'overviewfiles', null);
-        $course->annotate_files('course', 'legacy', null);
+
+        if ($this->get_setting_value('legacyfiles')) {
+            $course->annotate_files('course', 'legacy', null);
+        }
 
         // Return root element ($course)
 
@@ -832,9 +835,6 @@ class backup_badges_structure_step extends backup_structure_step {
     }
 
     protected function define_structure() {
-        global $CFG;
-
-        require_once($CFG->libdir . '/badgeslib.php');
 
         // Define each element separated.
 
@@ -886,15 +886,7 @@ class backup_badges_structure_step extends backup_structure_step {
 
         // Define sources.
 
-        $parametersql = '
-                SELECT *
-                FROM {badge}
-                WHERE courseid = :courseid
-                AND status != ' . BADGE_STATUS_ARCHIVED;
-        $parameterparams = [
-            'courseid' => backup::VAR_COURSEID
-        ];
-        $badge->set_source_sql($parametersql, $parameterparams);
+        $badge->set_source_table('badge', array('courseid' => backup::VAR_COURSEID));
         $criterion->set_source_table('badge_criteria', array('badgeid' => backup::VAR_PARENTID));
         $endorsement->set_source_table('badge_endorsement', array('badgeid' => backup::VAR_PARENTID));
 
@@ -1031,6 +1023,8 @@ class backup_gradebook_structure_step extends backup_structure_step {
             'plusfactor', 'aggregationcoef', 'aggregationcoef2', 'weightoverride',
             'sortorder', 'display', 'decimals', 'hidden', 'locked', 'locktime',
             'needsupdate', 'timecreated', 'timemodified'));
+
+        $this->add_plugin_structure('local', $grade_item, true);
 
         $grade_grades = new backup_nested_element('grade_grades');
         $grade_grade = new backup_nested_element('grade_grade', array('id'), array(
