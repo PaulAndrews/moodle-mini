@@ -98,6 +98,8 @@ class moodle_exception extends Exception {
      * @param string $debuginfo optional debugging information
      */
     function __construct($errorcode, $module='', $link='', $a=NULL, $debuginfo=null) {
+        global $CFG;
+
         if (empty($module) || $module == 'moodle' || $module == 'core') {
             $module = 'error';
         }
@@ -116,11 +118,21 @@ class moodle_exception extends Exception {
             $haserrorstring = false;
         }
 
-        if (defined('PHPUNIT_TEST') and PHPUNIT_TEST and $debuginfo) {
-            $message = "$message ($debuginfo)";
+        $isinphpunittest = (defined('PHPUNIT_TEST') && PHPUNIT_TEST);
+        $hasdebugdeveloper = (
+            isset($CFG->debugdisplay) &&
+            isset($CFG->debug) &&
+            $CFG->debugdisplay &&
+            $CFG->debug === DEBUG_DEVELOPER
+        );
+
+        if ($debuginfo) {
+            if ($isinphpunittest || $hasdebugdeveloper) {
+                $message = "$message ($debuginfo)";
+            }
         }
 
-        if (!$haserrorstring and defined('PHPUNIT_TEST') and PHPUNIT_TEST) {
+        if (!$haserrorstring and $isinphpunittest) {
             // Append the contents of $a to $debuginfo so helpful information isn't lost.
             // This emulates what {@link get_exception_info()} does. Unfortunately that
             // function is not used by phpunit.
@@ -598,25 +610,25 @@ function get_exception_info($ex) {
 }
 
 /**
- * Generate a V4 UUID.
+ * Generate a uuid.
  *
- * Unique is hard. Very hard. Attempt to use the PECL UUID function if available, and if not then revert to
+ * Unique is hard. Very hard. Attempt to use the PECL UUID functions if available, and if not then revert to
  * constructing the uuid using mt_rand.
  *
  * It is important that this token is not solely based on time as this could lead
  * to duplicates in a clustered environment (especially on VMs due to poor time precision).
- *
- * @see https://tools.ietf.org/html/rfc4122
  *
  * @return string The uuid.
  */
 function generate_uuid() {
     $uuid = '';
 
-    // Check if PECL UUID extension is available.
-    if (function_exists('uuid_time')) {
-        // Create a V4 UUID.
-        $uuid = uuid_create(UUID_TYPE_RANDOM);
+    if (function_exists("uuid_create")) {
+        $context = null;
+        uuid_create($context);
+
+        uuid_make($context, UUID_MAKE_V4);
+        uuid_export($context, UUID_FMT_STR, $uuid);
     } else {
         // Fallback uuid generation based on:
         // "http://www.php.net/manual/en/function.uniqid.php#94959".
@@ -1395,7 +1407,7 @@ function disable_output_buffering() {
  */
 function is_major_upgrade_required() {
     global $CFG;
-    $lastmajordbchanges = 2017092900.00;
+    $lastmajordbchanges = 2018111301.00;
 
     $required = empty($CFG->version);
     $required = $required || (float)$CFG->version < $lastmajordbchanges;
@@ -1794,60 +1806,6 @@ function make_localcache_directory($directory, $exceptiononerror = true) {
     }
 
     return make_writable_directory("$CFG->localcachedir/$directory", $exceptiononerror);
-}
-
-/**
- * Webserver access user logging
- */
-function set_access_log_user() {
-    global $USER, $CFG;
-    if ($USER && isset($USER->username)) {
-        $logmethod = '';
-        $logvalue = 0;
-        if (!empty($CFG->apacheloguser) && function_exists('apache_note')) {
-            $logmethod = 'apache';
-            $logvalue = $CFG->apacheloguser;
-        }
-        if (!empty($CFG->headerloguser)) {
-            $logmethod = 'header';
-            $logvalue = $CFG->headerloguser;
-        }
-        if (!empty($logmethod)) {
-            $loguserid = $USER->id;
-            $logusername = clean_filename($USER->username);
-            $logname = '';
-            if (isset($USER->firstname)) {
-                // We can assume both will be set
-                // - even if to empty.
-                $logname = clean_filename($USER->firstname . " " . $USER->lastname);
-            }
-            if (\core\session\manager::is_loggedinas()) {
-                $realuser = \core\session\manager::get_realuser();
-                $logusername = clean_filename($realuser->username." as ".$logusername);
-                $logname = clean_filename($realuser->firstname." ".$realuser->lastname ." as ".$logname);
-                $loguserid = clean_filename($realuser->id." as ".$loguserid);
-            }
-            switch ($logvalue) {
-                case 3:
-                    $logname = $logusername;
-                    break;
-                case 2:
-                    $logname = $logname;
-                    break;
-                case 1:
-                default:
-                    $logname = $loguserid;
-                    break;
-            }
-            if ($logmethod == 'apache') {
-                apache_note('MOODLEUSER', $logname);
-            }
-
-            if ($logmethod == 'header') {
-                header("X-MOODLEUSER: $logname");
-            }
-        }
-    }
 }
 
 /**

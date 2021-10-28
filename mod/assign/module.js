@@ -3,17 +3,11 @@ M.mod_assign = {};
 M.mod_assign.init_tree = function(Y, expand_all, htmlid) {
     var treeElement = Y.one('#'+htmlid);
     if (treeElement) {
-        Y.use('yui2-treeview', 'node-event-simulate', function(Y) {
+        Y.use('yui2-treeview', function(Y) {
             var tree = new Y.YUI2.widget.TreeView(htmlid);
 
             tree.subscribe("clickEvent", function(node, event) {
                 // We want normal clicking which redirects to url.
-                return false;
-            });
-
-            tree.subscribe("enterKeyPressed", function(node) {
-                // We want keyboard activation to trigger a click on the first link.
-                Y.one(node.getContentEl()).one('a').simulate('click');
                 return false;
             });
 
@@ -76,7 +70,6 @@ M.mod_assign.init_grading_table = function(Y) {
         var batchform = Y.one('form.gradingbatchoperationsform');
         if (batchform) {
             batchform.on('submit', function(e) {
-                M.util.js_pending('mod_assign/module.js:batch:submit');
                 checkboxes = Y.all('td.c0 input');
                 var selectedusers = [];
                 checkboxes.each(function(node) {
@@ -103,10 +96,8 @@ M.mod_assign.init_grading_table = function(Y) {
                         confirmmessage = M.util.get_string('batchoperationconfirm' + operation.get('value'), 'assign');
                     }
                     if (!confirm(confirmmessage)) {
-                        M.util.js_complete('mod_assign/module.js:batch:submit');
                         e.preventDefault();
                     }
-                    // Note: Do not js_complete. The page being reloaded will empty it.
                 }
             });
         }

@@ -293,7 +293,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'core/templates', 'mod_lti/e
      * @return {Promise} jQuery Deferred object
      */
     var addTool = function() {
-        var url = getToolURL().trim();
+        var url = $.trim(getToolURL());
 
         if (url === "") {
             return $.Deferred().resolve();

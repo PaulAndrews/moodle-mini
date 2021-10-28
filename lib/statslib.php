@@ -987,24 +987,18 @@ function stats_get_base_daily($time=0) {
 function stats_get_base_weekly($time=0) {
     global $CFG;
 
-    $datetime = new DateTime();
-    $datetime->setTimestamp(stats_get_base_daily($time));
+    $time = stats_get_base_daily($time);
     $startday = $CFG->calendar_startwday;
 
     core_date::set_default_server_timezone();
     $thisday = date('w', $time);
 
-    $days = 0;
-
     if ($thisday > $startday) {
-        $days = $thisday - $startday;
+        $time = $time - (($thisday - $startday) * 60*60*24);
     } else if ($thisday < $startday) {
-        $days = 7 + $thisday - $startday;
+        $time = $time - ((7 + $thisday - $startday) * 60*60*24);
     }
-
-    $datetime->sub(new DateInterval("P{$days}D"));
-
-    return $datetime->getTimestamp();
+    return $time;
 }
 
 /**

@@ -36,7 +36,9 @@ Feature: Edit quiz marks with attempts
     And I press "Attempt quiz now"
     And I log out
     And I log in as "teacher1"
-    And I am on the "Quiz 1" "mod_quiz > Edit" page
+    And I am on "Course 1" course homepage
+    And I follow "Quiz 1"
+    And I navigate to "Edit quiz" in current page administration
 
   @javascript
   Scenario: Set the max mark for a question.
@@ -46,7 +48,8 @@ Feature: Edit quiz marks with attempts
     And I should see "Total of marks: 10.00"
 
     When I follow "Edit maximum mark"
-    And I press the escape key
+    And I wait until "li input[name=maxmark]" "css_element" exists
+    And I take focus off "li input[name=maxmark]" "css_element"
     Then I should see "7.00"
     And I should see "3.00"
     And I should see "Total of marks: 10.00"
@@ -77,7 +80,7 @@ Feature: Edit quiz marks with attempts
       | Decimal places in grades | 3 |
       | Decimal places in question grades | 5 |
     And I press "Save and display"
-    And I am on the "Quiz 1" "mod_quiz > Edit" page
+    And I navigate to "Edit quiz" in current page administration
     # Then the field "maxgrade" matches value "20.000" -- with exact match on decimal places.
     Then "//input[@name = 'maxgrade' and @value = '20.000']" "xpath_element" should exist
     And I should see "2.00000"

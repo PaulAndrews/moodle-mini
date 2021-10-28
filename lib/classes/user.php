@@ -82,6 +82,13 @@ class core_user {
         'alternatename'
     ];
 
+    /** @var int Indicates that user profile view should be prevented */
+    const VIEWPROFILE_PREVENT = -1;
+    /** @var int Indicates that user profile view should not be prevented */
+    const VIEWPROFILE_DO_NOT_PREVENT = 0;
+    /** @var int Indicates that user profile view should be allowed even if Moodle would prevent it */
+    const VIEWPROFILE_FORCE_ALLOW = 1;
+
     /** @var stdClass keep record of noreply user */
     public static $noreplyuser = false;
 
@@ -375,7 +382,7 @@ class core_user {
     protected static function get_enrolled_sql_on_courses_with_capability($capability) {
         // Get all courses where user have the capability.
         $courses = get_user_capability_course($capability, null, true,
-                'ctxid, ctxpath, ctxdepth, ctxlevel, ctxinstance');
+                implode(',', array_values(context_helper::get_preload_record_columns('ctx'))));
         if (!$courses) {
             return [null, null];
         }
@@ -517,17 +524,18 @@ class core_user {
     }
 
     /**
-     * Return true if user id is greater than 0 and alternatively check db.
+     * Return true is user id is greater than self::NOREPLY_USER and
+     * alternatively check db.
      *
      * @param int $userid user id.
      * @param bool $checkdb if true userid will be checked in db. By default it's false, and
-     *                      userid is compared with 0 for performance.
+     *                      userid is compared with NOREPLY_USER for performance.
      * @return bool true is real user else false.
      */
     public static function is_real_user($userid, $checkdb = false) {
         global $DB;
 
-        if ($userid <= 0) {
+        if ($userid < 0) {
             return false;
         }
         if ($checkdb) {
@@ -700,7 +708,7 @@ class core_user {
         $fields['lastlogin'] = array('type' => PARAM_INT, 'null' => NULL_NOT_ALLOWED);
         $fields['currentlogin'] = array('type' => PARAM_INT, 'null' => NULL_NOT_ALLOWED);
         $fields['lastip'] = array('type' => PARAM_NOTAGS, 'null' => NULL_NOT_ALLOWED);
-        $fields['secret'] = array('type' => PARAM_ALPHANUM, 'null' => NULL_NOT_ALLOWED);
+        $fields['secret'] = array('type' => PARAM_RAW, 'null' => NULL_NOT_ALLOWED);
         $fields['picture'] = array('type' => PARAM_INT, 'null' => NULL_NOT_ALLOWED);
         $fields['url'] = array('type' => PARAM_URL, 'null' => NULL_NOT_ALLOWED);
         $fields['description'] = array('type' => PARAM_RAW, 'null' => NULL_ALLOWED);

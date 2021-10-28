@@ -1582,18 +1582,10 @@ function scorm_get_toc_object($user, $scorm, $currentorg='', $scoid='', $mode='n
 
                     if (isset($usertracks[$sco->identifier])) {
                         $usertrack = $usertracks[$sco->identifier];
-
-                        // Check we have a valid status string identifier.
-                        if ($statusstringexists = get_string_manager()->string_exists($usertrack->status, 'scorm')) {
-                            $strstatus = get_string($usertrack->status, 'scorm');
-                        } else {
-                            $strstatus = get_string('invalidstatus', 'scorm');
-                        }
+                        $strstatus = get_string($usertrack->status, 'scorm');
 
                         if ($sco->scormtype == 'sco') {
-                            // Assume if we didn't get a valid status string, we don't have an icon either.
-                            $statusicon = $OUTPUT->pix_icon($statusstringexists ? $usertrack->status : 'incomplete',
-                                $strstatus, 'scorm');
+                            $statusicon = $OUTPUT->pix_icon($usertrack->status, $strstatus, 'scorm');
                         } else {
                             $statusicon = $OUTPUT->pix_icon('asset', get_string('assetlaunched', 'scorm'), 'scorm');
                         }
@@ -2130,11 +2122,10 @@ function scorm_check_launchable_sco($scorm, $scoid) {
  * @param  stdClass  $scorm            SCORM record
  * @param  boolean $checkviewreportcap Check the scorm:viewreport cap
  * @param  stdClass  $context          Module context, required if $checkviewreportcap is set to true
- * @param  int  $userid                User id override
  * @return array                       status (available or not and possible warnings)
  * @since  Moodle 3.0
  */
-function scorm_get_availability_status($scorm, $checkviewreportcap = false, $context = null, $userid = null) {
+function scorm_get_availability_status($scorm, $checkviewreportcap = false, $context = null) {
     $open = true;
     $closed = false;
     $warnings = array();
@@ -2148,7 +2139,7 @@ function scorm_get_availability_status($scorm, $checkviewreportcap = false, $con
     }
 
     if (!$open or $closed) {
-        if ($checkviewreportcap and !empty($context) and has_capability('mod/scorm:viewreport', $context, $userid)) {
+        if ($checkviewreportcap and !empty($context) and has_capability('mod/scorm:viewreport', $context)) {
             return array(true, $warnings);
         }
 
@@ -2376,13 +2367,12 @@ function scorm_eval_prerequisites($prerequisites, $usertracks) {
                     if (isset($statuses[$value])) {
                         $value = $statuses[$value];
                     }
-
-                    $elementprerequisitematch = (strcmp($usertracks[$element]->status, $value) == 0);
                     if ($matches[2] == '<>') {
-                        $element = $elementprerequisitematch ? 'false' : 'true';
+                        $oper = '!=';
                     } else {
-                        $element = $elementprerequisitematch ? 'true' : 'false';
+                        $oper = '==';
                     }
+                    $element = '(\''.$usertracks[$element]->status.'\' '.$oper.' \''.$value.'\')';
                 } else {
                     $element = 'false';
                 }

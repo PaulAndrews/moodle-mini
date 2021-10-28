@@ -24,7 +24,7 @@ Feature: The forum search allows users to perform advanced searches for forum po
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
     And I add the "Latest announcements" block
-    And I navigate to "Edit settings" node in "Course administration"
+    And I navigate to "Edit settings" in current page administration
     And I expand all fieldsets
     And I set the field "id_newsitems" to "1"
     And I press "Save and display"
@@ -130,6 +130,7 @@ Feature: The forum search allows users to perform advanced searches for forum po
     And I press "Search forums"
     And I should see "Advanced search"
     And I set the field "Is tagged with" to "SearchedTag"
+    And I click on "[data-value='SearchedTag']" "css_element"
     When I press "Search forums"
     Then I should see "My subject"
     And I should not see "Your subjective"

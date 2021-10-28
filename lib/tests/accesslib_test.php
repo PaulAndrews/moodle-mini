@@ -196,7 +196,6 @@ class core_accesslib_testcase extends advanced_testcase {
 
         // Prevent the capability for this user role.
         assign_capability($capability, CAP_PROHIBIT, $role->id, $coursecontext);
-        $coursecontext->mark_dirty();
         $this->assertFalse(has_capability($capability, $coursecontext, $user->id));
 
         // Again, we seed the cache first by checking initial enrolment,
@@ -1176,39 +1175,6 @@ class core_accesslib_testcase extends advanced_testcase {
     }
 
     /**
-     * Test user count of assignable roles in context where users are assigned the role via different components.
-     */
-    public function test_get_assignable_roles_distinct_usercount() {
-        global $DB;
-
-        $this->resetAfterTest(true);
-
-        $this->setAdminUser();
-
-        $course = $this->getDataGenerator()->create_course();
-        $context = \context_course::instance($course->id);
-
-        $user1 = $this->getDataGenerator()->create_user();
-        $user2 = $this->getDataGenerator()->create_user();
-
-        $studentrole = $DB->get_record('role', ['shortname' => 'student']);
-
-        // Assign each user the student role in course.
-        role_assign($studentrole->id, $user1->id, $context->id);
-        role_assign($studentrole->id, $user2->id, $context->id);
-
-        list($rolenames, $rolecounts, $nameswithcounts) = get_assignable_roles($context, ROLENAME_SHORT, true);
-        $this->assertEquals(2, $rolecounts[$studentrole->id]);
-
-        // Assign first user the student role in course again (this time via 'enrol_self' component).
-        role_assign($studentrole->id, $user1->id, $context->id, 'enrol_self', 1);
-
-        // There are still only two distinct users.
-        list($rolenames, $rolecounts, $nameswithcounts) = get_assignable_roles($context, ROLENAME_SHORT, true);
-        $this->assertEquals(2, $rolecounts[$studentrole->id]);
-    }
-
-    /**
      * Test getting of all switchable roles.
      */
     public function test_get_switchable_roles() {
@@ -1836,101 +1802,6 @@ class core_accesslib_testcase extends advanced_testcase {
         $this->assertFalse(has_capability('moodle/site:approvecourse', $coursecontext, 0));
         $this->assertFalse(has_any_capability($sca, $coursecontext, 0));
         $this->assertFalse(has_all_capabilities($sca, $coursecontext, 0));
-    }
-
-    /**
-     * Test that assigning a fake cap does not return.
-     */
-    public function test_fake_capability() {
-        global $DB;
-
-        $this->resetAfterTest();
-
-        $course = $this->getDataGenerator()->create_course();
-        $coursecontext = context_course::instance($course->id);
-        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'), '*', MUST_EXIST);
-        $teacher = $this->getDataGenerator()->create_user();
-
-        $fakecapname = 'moodle/fake:capability';
-
-        role_assign($teacherrole->id, $teacher->id, $coursecontext);
-        $admin = $DB->get_record('user', array('username' => 'admin'));
-
-        // Test a capability which does not exist.
-        // Note: Do not use assign_capability because it will not allow fake caps.
-        $DB->insert_record('role_capabilities', (object) [
-            'contextid' => $coursecontext->id,
-            'roleid' => $teacherrole->id,
-            'capability' => $fakecapname,
-            'permission' => CAP_ALLOW,
-            'timemodified' => time(),
-            'modifierid' => 0,
-        ]);
-
-        // Check `has_capability`.
-        $this->assertFalse(has_capability($fakecapname, $coursecontext, $teacher));
-        $this->assertDebuggingCalled("Capability \"{$fakecapname}\" was not found! This has to be fixed in code.");
-        $this->assertFalse(has_capability($fakecapname, $coursecontext, $admin));
-        $this->assertDebuggingCalled("Capability \"{$fakecapname}\" was not found! This has to be fixed in code.");
-
-        // Check `get_with_capability_sql` (with uses `get_with_capability_join`).
-        list($sql, $params) = get_with_capability_sql($coursecontext, $fakecapname);
-        $users = $DB->get_records_sql($sql, $params);
-
-        $this->assertFalse(array_key_exists($teacher->id, $users));
-        $this->assertFalse(array_key_exists($admin->id, $users));
-
-        // Check `get_users_by_capability`.
-        $users = get_users_by_capability($coursecontext, $fakecapname);
-
-        $this->assertFalse(array_key_exists($teacher->id, $users));
-        $this->assertFalse(array_key_exists($admin->id, $users));
-    }
-
-    /**
-     * Test that assigning a fake cap does not return.
-     */
-    public function test_fake_capability_assign() {
-        global $DB;
-
-        $this->resetAfterTest();
-
-        $course = $this->getDataGenerator()->create_course();
-        $coursecontext = context_course::instance($course->id);
-        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'), '*', MUST_EXIST);
-        $teacher = $this->getDataGenerator()->create_user();
-
-        $capability = 'moodle/fake:capability';
-
-        role_assign($teacherrole->id, $teacher->id, $coursecontext);
-        $admin = $DB->get_record('user', array('username' => 'admin'));
-
-        $this->expectException('coding_exception');
-        $this->expectExceptionMessage("Capability '{$capability}' was not found! This has to be fixed in code.");
-        assign_capability($capability, CAP_ALLOW, $teacherrole->id, $coursecontext);
-    }
-
-    /**
-     * Test that assigning a fake cap does not return.
-     */
-    public function test_fake_capability_unassign() {
-        global $DB;
-
-        $this->resetAfterTest();
-
-        $course = $this->getDataGenerator()->create_course();
-        $coursecontext = context_course::instance($course->id);
-        $teacherrole = $DB->get_record('role', array('shortname' => 'editingteacher'), '*', MUST_EXIST);
-        $teacher = $this->getDataGenerator()->create_user();
-
-        $capability = 'moodle/fake:capability';
-
-        role_assign($teacherrole->id, $teacher->id, $coursecontext);
-        $admin = $DB->get_record('user', array('username' => 'admin'));
-
-        $this->expectException('coding_exception');
-        $this->expectExceptionMessage("Capability '{$capability}' was not found! This has to be fixed in code.");
-        unassign_capability($capability, CAP_ALLOW, $teacherrole->id, $coursecontext);
     }
 
     /**
@@ -2896,12 +2767,17 @@ class core_accesslib_testcase extends advanced_testcase {
         $this->assertEquals(array($systemcontext->id=>$systemcontext), $systemcontext->get_parent_contexts(true));
         $this->assertEquals(array(), $systemcontext->get_parent_context_ids());
         $this->assertEquals(array($systemcontext->id), $systemcontext->get_parent_context_ids(true));
+        $this->assertEquals(array(), $systemcontext->get_parent_context_paths());
+        $this->assertEquals(array($systemcontext->id => $systemcontext->path), $systemcontext->get_parent_context_paths(true));
 
         $this->assertEquals($systemcontext, $frontpagecontext->get_parent_context());
         $this->assertEquals(array($systemcontext->id=>$systemcontext), $frontpagecontext->get_parent_contexts());
         $this->assertEquals(array($frontpagecontext->id=>$frontpagecontext, $systemcontext->id=>$systemcontext), $frontpagecontext->get_parent_contexts(true));
         $this->assertEquals(array($systemcontext->id), $frontpagecontext->get_parent_context_ids());
         $this->assertEquals(array($frontpagecontext->id, $systemcontext->id), $frontpagecontext->get_parent_context_ids(true));
+        $this->assertEquals(array($systemcontext->id => $systemcontext->path), $frontpagecontext->get_parent_context_paths());
+        $expected = array($systemcontext->id => $systemcontext->path, $frontpagecontext->id => $frontpagecontext->path);
+        $this->assertEquals($expected, $frontpagecontext->get_parent_context_paths(true));
 
         $this->assertFalse($systemcontext->get_parent_context());
         $frontpagecontext = context_course::instance($SITE->id);
@@ -3086,7 +2962,7 @@ class core_accesslib_testcase extends advanced_testcase {
         assign_capability('moodle/site:accessallgroups', CAP_ALLOW, $CFG->defaultfrontpageroleid, $frontpagepagecontext, true);
         assign_capability('mod/page:view', CAP_PREVENT, $allroles['guest'], $frontpagepagecontext, true);
         assign_capability('mod/page:view', CAP_ALLOW, $allroles['user'], $frontpagepagecontext, true);
-        assign_capability('mod/page:view', CAP_ALLOW, $allroles['student'], $frontpagepagecontext, true);
+        assign_capability('moodle/page:view', CAP_ALLOW, $allroles['student'], $frontpagepagecontext, true);
 
         assign_capability('moodle/site:accessallgroups', CAP_ALLOW, $CFG->defaultuserroleid, $frontpagecontext, true);
         assign_capability('moodle/site:accessallgroups', CAP_ALLOW, $CFG->defaultfrontpageroleid, $frontpagecontext, true);
@@ -3374,7 +3250,7 @@ class core_accesslib_testcase extends advanced_testcase {
         $context = context_course::instance($course->id);
         $this->assertEquals($categorycontext, $context->get_parent_context());
         $dirty = get_cache_flags('accesslib/dirtycontexts', time()-2);
-        $this->assertTrue(isset($dirty[$oldpath]));
+        $this->assertFalse(isset($dirty[$oldpath]));
         $this->assertTrue(isset($dirty[$context->path]));
 
 
@@ -3400,7 +3276,7 @@ class core_accesslib_testcase extends advanced_testcase {
         $DB->delete_records('cache_flags', array());
         $context->delete(); // Should delete also linked blocks.
         $dirty = get_cache_flags('accesslib/dirtycontexts', time()-2);
-        $this->assertTrue(isset($dirty[$context->path]));
+        $this->assertFalse(isset($dirty[$context->path]));
         $this->assertFalse($DB->record_exists('context', array('id'=>$context->id)));
         $this->assertFalse($DB->record_exists('context', array('id'=>$bicontext->id)));
         $this->assertFalse($DB->record_exists('context', array('contextlevel'=>CONTEXT_MODULE, 'instanceid'=>$testpages[4])));
@@ -3420,7 +3296,7 @@ class core_accesslib_testcase extends advanced_testcase {
         $DB->delete_records('cache_flags', array());
         context_helper::delete_instance(CONTEXT_COURSE, $lastcourse);
         $dirty = get_cache_flags('accesslib/dirtycontexts', time()-2);
-        $this->assertTrue(isset($dirty[$coursecontext->path]));
+        $this->assertFalse(isset($dirty[$coursecontext->path]));
         $this->assertEquals(0, context_inspection::test_context_cache_size());
         $this->assertFalse($DB->record_exists('context', array('contextlevel'=>CONTEXT_COURSE, 'instanceid'=>$lastcourse)));
         context_course::instance($lastcourse);
@@ -3511,88 +3387,6 @@ class core_accesslib_testcase extends advanced_testcase {
         $this->assertDebuggingCalled('get_context_instance() is deprecated, please use context_xxxx::instance() instead.', DEBUG_DEVELOPER);
         get_system_context();
         $this->assertDebuggingCalled('get_system_context() is deprecated, please use context_system::instance() instead.', DEBUG_DEVELOPER);
-    }
-
-    /**
-     * Helper that verifies a list of capabilities, as returned by
-     * $context->get_capabilities() contains certain capabilities.
-     *
-     * @param array $expected a list of capability names
-     * @param array $actual a list of capability info from $context->get_capabilities().
-     */
-    protected function assert_capability_list_contains($expected, $actual) {
-        $actualnames = [];
-        foreach ($actual as $cap) {
-            $actualnames[$cap->name] = $cap->name;
-        }
-        $this->assertArraySubset(array_combine($expected, $expected), $actualnames);
-    }
-
-    /**
-     * Test that context_system::get_capabilities returns capabilities relevant to all modules.
-     */
-    public function test_context_module_caps_returned_by_get_capabilities_in_sys_context() {
-        $actual = context_system::instance()->get_capabilities();
-
-        // Just test a few representative capabilities.
-        $expectedcapabilities = ['moodle/site:accessallgroups', 'moodle/site:viewfullnames',
-                'repository/upload:view'];
-
-        $this->assert_capability_list_contains($expectedcapabilities, $actual);
-    }
-
-    /**
-     * Test that context_coursecat::get_capabilities returns capabilities relevant to all modules.
-     */
-    public function test_context_module_caps_returned_by_get_capabilities_in_course_cat_context() {
-        $this->resetAfterTest(true);
-        $generator = $this->getDataGenerator();
-        $cat = $generator->create_category();
-
-        $actual = context_coursecat::instance($cat->id)->get_capabilities();
-
-        // Just test a few representative capabilities.
-        $expectedcapabilities = ['moodle/site:accessallgroups', 'moodle/site:viewfullnames',
-                'repository/upload:view'];
-
-        $this->assert_capability_list_contains($expectedcapabilities, $actual);
-    }
-
-    /**
-     * Test that context_course::get_capabilities returns capabilities relevant to all modules.
-     */
-    public function test_context_module_caps_returned_by_get_capabilities_in_course_context() {
-        $this->resetAfterTest(true);
-        $generator = $this->getDataGenerator();
-        $cat = $generator->create_category();
-        $course = $generator->create_course(['category' => $cat->id]);
-
-        $actual = context_course::instance($course->id)->get_capabilities();
-
-        // Just test a few representative capabilities.
-        $expectedcapabilities = ['moodle/site:accessallgroups', 'moodle/site:viewfullnames',
-                'repository/upload:view'];
-
-        $this->assert_capability_list_contains($expectedcapabilities, $actual);
-    }
-
-    /**
-     * Test that context_module::get_capabilities returns capabilities relevant to all modules.
-     */
-    public function test_context_module_caps_returned_by_get_capabilities_mod_context() {
-        $this->resetAfterTest(true);
-        $generator = $this->getDataGenerator();
-        $cat = $generator->create_category();
-        $course = $generator->create_course(['category' => $cat->id]);
-        $page = $generator->create_module('page', ['course' => $course->id]);
-
-        $actual = context_module::instance($page->cmid)->get_capabilities();
-
-        // Just test a few representative capabilities.
-        $expectedcapabilities = ['moodle/site:accessallgroups', 'moodle/site:viewfullnames',
-                'repository/upload:view'];
-
-        $this->assert_capability_list_contains($expectedcapabilities, $actual);
     }
 
     /**
@@ -3796,10 +3590,10 @@ class core_accesslib_testcase extends advanced_testcase {
         $this->assertFalse(array_key_exists($guest->id, $users));
 
         // Test role override.
-        assign_capability('moodle/backup:backupcourse', CAP_PROHIBIT, $teacherrole->id, $coursecontext, true);
-        assign_capability('moodle/backup:backupcourse', CAP_ALLOW, $studentrole->id, $coursecontext, true);
+        assign_capability('moodle/site:backupcourse', CAP_PROHIBIT, $teacherrole->id, $coursecontext, true);
+        assign_capability('moodle/site:backupcourse', CAP_ALLOW, $studentrole->id, $coursecontext, true);
 
-        list($sql, $params) = get_with_capability_sql($coursecontext, 'moodle/backup:backupcourse');
+        list($sql, $params) = get_with_capability_sql($coursecontext, 'moodle/site:backupcourse');
         $users = $DB->get_records_sql($sql, $params);
 
         $this->assertFalse(array_key_exists($teacher->id, $users));
@@ -3943,245 +3737,6 @@ class core_accesslib_testcase extends advanced_testcase {
         set_config('profileroles', "");
         $this->setUser($user2);
         $this->assertEquals($expectedteacher, get_profile_roles($coursecontext));
-    }
-
-    /**
-     * Data provider for is_parent_of context checks.
-     *
-     * @return  array
-     */
-    public function is_parent_of_provider(): array {
-        $provideboth = function(string $desc, string $contextpath, string $testpath, bool $expected): array {
-            return [
-                "includeself: true; {$desc}" => [
-                    $contextpath,
-                    $testpath,
-                    true,
-                    $expected,
-                ],
-                "includeself: false; {$desc}" => [
-                    $contextpath,
-                    $testpath,
-                    false,
-                    $expected,
-                ],
-            ];
-        };
-
-        return array_merge(
-            [
-                'includeself: true, testing self' => [
-                    '/1/4/17/291/1001/17105',
-                    '/1/4/17/291/1001/17105',
-                    true,
-                    true,
-                ],
-                'includeself: false, testing self' => [
-                    '/1/4/17/291/1001/17105',
-                    '/1/4/17/291/1001/17105',
-                    false,
-                    false,
-                ],
-            ],
-            $provideboth(
-                'testing parent',
-                '/1/4/17/291/1001/17105',
-                '/1/4/17/291/1001',
-                false
-            ),
-            $provideboth(
-                'testing child',
-                '/1/4/17/291/1001',
-                '/1/4/17/291/1001/17105',
-                true
-            ),
-            $provideboth(
-                'testing grandchild',
-                '/1',
-                '/1/4/17/291/1001/17105',
-                true
-            )
-        );
-    }
-
-    /**
-     * Ensure that the is_parent_of() function works as anticipated.
-     *
-     * @dataProvider is_parent_of_provider
-     * @param   string $contextpath The path of the context being compared with
-     * @param   string $testpath The path of the context being compared
-     * @param   bool $testself Whether to check the current context
-     * @param   bool $expected The expected result
-     */
-    public function test_is_parent_of(string $contextpath, string $testpath, bool $testself, bool $expected) {
-        $context = $this->getMockBuilder(\context::class)
-            ->disableOriginalConstructor()
-            ->setMethods([
-                'get_url',
-                'get_capabilities',
-            ])
-            ->getMock();
-
-        $rcp = new ReflectionProperty($context, '_path');
-        $rcp->setAccessible(true);
-        $rcp->setValue($context, $contextpath);
-
-        $comparisoncontext = $this->getMockBuilder(\context::class)
-            ->disableOriginalConstructor()
-            ->setMethods([
-                'get_url',
-                'get_capabilities',
-            ])
-            ->getMock();
-
-        $rcp = new ReflectionProperty($comparisoncontext, '_path');
-        $rcp->setAccessible(true);
-        $rcp->setValue($comparisoncontext, $testpath);
-
-        $this->assertEquals($expected, $context->is_parent_of($comparisoncontext, $testself));
-    }
-
-    /**
-     * Data provider for is_child_of context checks.
-     *
-     * @return  array
-     */
-    public function is_child_of_provider(): array {
-        $provideboth = function(string $desc, string $contextpath, string $testpath, bool $expected): array {
-            return [
-                "includeself: true; {$desc}" => [
-                    $contextpath,
-                    $testpath,
-                    true,
-                    $expected,
-                ],
-                "includeself: false; {$desc}" => [
-                    $contextpath,
-                    $testpath,
-                    false,
-                    $expected,
-                ],
-            ];
-        };
-
-        return array_merge(
-            [
-                'includeself: true, testing self' => [
-                    '/1/4/17/291/1001/17105',
-                    '/1/4/17/291/1001/17105',
-                    true,
-                    true,
-                ],
-                'includeself: false, testing self' => [
-                    '/1/4/17/291/1001/17105',
-                    '/1/4/17/291/1001/17105',
-                    false,
-                    false,
-                ],
-            ],
-            $provideboth(
-                'testing child',
-                '/1/4/17/291/1001/17105',
-                '/1/4/17/291/1001',
-                true
-            ),
-            $provideboth(
-                'testing parent',
-                '/1/4/17/291/1001',
-                '/1/4/17/291/1001/17105',
-                false
-            ),
-            $provideboth(
-                'testing grandchild',
-                '/1/4/17/291/1001/17105',
-                '/1',
-                true
-            ),
-            $provideboth(
-                'testing grandparent',
-                '/1',
-                '/1/4/17/291/1001/17105',
-                false
-            )
-        );
-    }
-
-    /**
-     * Ensure that the is_child_of() function works as anticipated.
-     *
-     * @dataProvider is_child_of_provider
-     * @param   string $contextpath The path of the context being compared with
-     * @param   string $testpath The path of the context being compared
-     * @param   bool $testself Whether to check the current context
-     * @param   bool $expected The expected result
-     */
-    public function test_is_child_of(string $contextpath, string $testpath, bool $testself, bool $expected) {
-        $context = $this->getMockBuilder(\context::class)
-            ->disableOriginalConstructor()
-            ->setMethods([
-                'get_url',
-                'get_capabilities',
-            ])
-            ->getMock();
-
-        $rcp = new ReflectionProperty($context, '_path');
-        $rcp->setAccessible(true);
-        $rcp->setValue($context, $contextpath);
-
-        $comparisoncontext = $this->getMockBuilder(\context::class)
-            ->disableOriginalConstructor()
-            ->setMethods([
-                'get_url',
-                'get_capabilities',
-            ])
-            ->getMock();
-
-        $rcp = new ReflectionProperty($comparisoncontext, '_path');
-        $rcp->setAccessible(true);
-        $rcp->setValue($comparisoncontext, $testpath);
-
-        $this->assertEquals($expected, $context->is_child_of($comparisoncontext, $testself));
-    }
-
-    /**
-     * Ensure that the get_parent_contexts() function limits the number of queries it performs.
-     */
-    public function test_get_parent_contexts_preload() {
-        global $DB;
-
-        $this->resetAfterTest();
-
-        /*
-         * Given the following data structure:
-         * System
-         * - Category
-         * --- Category
-         * ----- Category
-         * ------- Category
-         * --------- Course
-         * ----------- Activity (Forum)
-         */
-
-        $contexts = [];
-
-        $cat1 = $this->getDataGenerator()->create_category();
-        $cat2 = $this->getDataGenerator()->create_category(['parent' => $cat1->id]);
-        $cat3 = $this->getDataGenerator()->create_category(['parent' => $cat2->id]);
-        $cat4 = $this->getDataGenerator()->create_category(['parent' => $cat3->id]);
-        $course = $this->getDataGenerator()->create_course(['category' => $cat4->id]);
-        $forum = $this->getDataGenerator()->create_module('forum', ['course' => $course->id]);
-
-        $modcontext = context_module::instance($forum->cmid);
-
-        context_helper::reset_caches();
-
-        // There should only be a single DB query.
-        $predbqueries = $DB->perf_get_reads();
-
-        $parents = $modcontext->get_parent_contexts();
-        // Note: For some databases There is one read, plus one FETCH, plus one CLOSE.
-        // These all show as reads, when there has actually only been a single query.
-        $this->assertLessThanOrEqual(3, $DB->perf_get_reads() - $predbqueries);
     }
 }
 

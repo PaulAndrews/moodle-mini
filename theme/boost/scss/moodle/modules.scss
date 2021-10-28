@@ -252,9 +252,6 @@ div#dock {
             margin-top: 1rem;
         }
     }
-    .fitem .felement .custom-select {
-        align-self: flex-start;
-    }
 }
 .path-mod-lesson .generaltable td {
     vertical-align: middle;
@@ -522,6 +519,9 @@ div#dock {
 .path-mod-assign [data-region="grade-actions-panel"] [data-region="grade-actions"] .collapse-buttons {
     top: auto;
 }
+.path-mod-assign .no-overflow {
+    overflow: initial;
+}
 
 // This section removes the responsiveness from the form in the grading panel
 $popout-header-font-size: 1.5 * $font-size-base;
@@ -639,8 +639,8 @@ $popout-header-height: 4rem;
 }
 
 .assignfeedback_editpdf_widget .label {
-    @extend .alert;
-    @extend .alert-info;
+    @extend .tag;
+    @extend .tag-info;
 }
 
 .assignfeedback_editpdf_menu {

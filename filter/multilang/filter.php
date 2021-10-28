@@ -16,7 +16,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    filter_multilang
+ * @package    filter
+ * @subpackage multilang
  * @copyright  Gaetan Frenoy <gaetan@frenoy.net>
  * @copyright  2004 onwards Eloy Lafuente (stronk7) {@link http://stronk7.com}
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

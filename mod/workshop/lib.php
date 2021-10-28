@@ -34,6 +34,9 @@ define('WORKSHOP_EVENT_TYPE_SUBMISSION_OPEN',   'opensubmission');
 define('WORKSHOP_EVENT_TYPE_SUBMISSION_CLOSE',  'closesubmission');
 define('WORKSHOP_EVENT_TYPE_ASSESSMENT_OPEN',   'openassessment');
 define('WORKSHOP_EVENT_TYPE_ASSESSMENT_CLOSE',  'closeassessment');
+define('WORKSHOP_SUBMISSION_TYPE_DISABLED', 0);
+define('WORKSHOP_SUBMISSION_TYPE_AVAILABLE', 1);
+define('WORKSHOP_SUBMISSION_TYPE_REQUIRED', 2);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Moodle core API                                                            //
@@ -405,23 +408,13 @@ function workshop_user_outline($course, $user, $mod, $workshop) {
 
     if (!empty($grades->items[0]->grades)) {
         $submissiongrade = reset($grades->items[0]->grades);
+        $info .= get_string('submissiongrade', 'workshop') . ': ' . $submissiongrade->str_long_grade . html_writer::empty_tag('br');
         $time = max($time, $submissiongrade->dategraded);
-        if (!$submissiongrade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $info .= get_string('submissiongrade', 'workshop') . ': ' . $submissiongrade->str_long_grade
-                . html_writer::empty_tag('br');
-        } else {
-            $info .= get_string('submissiongrade', 'workshop') . ': ' . get_string('hidden', 'grades')
-                . html_writer::empty_tag('br');
-        }
     }
     if (!empty($grades->items[1]->grades)) {
         $assessmentgrade = reset($grades->items[1]->grades);
+        $info .= get_string('gradinggrade', 'workshop') . ': ' . $assessmentgrade->str_long_grade;
         $time = max($time, $assessmentgrade->dategraded);
-        if (!$assessmentgrade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $info .= get_string('gradinggrade', 'workshop') . ': ' . $assessmentgrade->str_long_grade;
-        } else {
-            $info .= get_string('gradinggrade', 'workshop') . ': ' . get_string('hidden', 'grades');
-        }
     }
 
     if (!empty($info) and !empty($time)) {
@@ -454,20 +447,12 @@ function workshop_user_complete($course, $user, $mod, $workshop) {
 
     if (!empty($grades->items[0]->grades)) {
         $submissiongrade = reset($grades->items[0]->grades);
-        if (!$submissiongrade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $info = get_string('submissiongrade', 'workshop') . ': ' . $submissiongrade->str_long_grade;
-        } else {
-            $info = get_string('submissiongrade', 'workshop') . ': ' . get_string('hidden', 'grades');
-        }
+        $info = get_string('submissiongrade', 'workshop') . ': ' . $submissiongrade->str_long_grade;
         echo html_writer::tag('li', $info, array('class'=>'submissiongrade'));
     }
     if (!empty($grades->items[1]->grades)) {
         $assessmentgrade = reset($grades->items[1]->grades);
-        if (!$assessmentgrade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $info = get_string('gradinggrade', 'workshop') . ': ' . $assessmentgrade->str_long_grade;
-        } else {
-            $info = get_string('gradinggrade', 'workshop') . ': ' . get_string('hidden', 'grades');
-        }
+        $info = get_string('gradinggrade', 'workshop') . ': ' . $assessmentgrade->str_long_grade;
         echo html_writer::tag('li', $info, array('class'=>'gradinggrade'));
     }
 
@@ -1169,6 +1154,15 @@ function workshop_scale_used_anywhere($scaleid) {
     return false;
 }
 
+/**
+ * Returns all other caps used in the module
+ *
+ * @return array
+ */
+function workshop_get_extra_capabilities() {
+    return array('moodle/site:accessallgroups');
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Gradebook API                                                              //
 ////////////////////////////////////////////////////////////////////////////////
@@ -1835,23 +1829,12 @@ function workshop_calendar_update(stdClass $workshop, $cmid) {
  *
  * @param calendar_event $event
  * @param \core_calendar\action_factory $factory
- * @param int $userid User id to use for all capability checks, etc. Set to 0 for current user (default).
  * @return \core_calendar\local\event\entities\action_interface|null
  */
 function mod_workshop_core_calendar_provide_event_action(calendar_event $event,
-        \core_calendar\action_factory $factory, int $userid = 0) {
-    global $USER;
+                                                         \core_calendar\action_factory $factory) {
 
-    if (!$userid) {
-        $userid = $USER->id;
-    }
-
-    $cm = get_fast_modinfo($event->courseid, $userid)->instances['workshop'][$event->instance];
-
-    if (!$cm->uservisible) {
-        // The module is not visible to the user for any reason.
-        return null;
-    }
+    $cm = get_fast_modinfo($event->courseid)->instances['workshop'][$event->instance];
 
     return $factory->create_instance(
         get_string('viewworkshopsummary', 'workshop'),

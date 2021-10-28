@@ -2090,30 +2090,12 @@ class restore_ras_and_caps_structure_step extends restore_structure_step {
         $data = (object)$data;
 
         // Check roleid is one of the mapped ones
-        $newrole = $this->get_mapping('role', $data->roleid);
-        $newroleid = isset($newrole->newitemid) ? $newrole->newitemid : false;
-        $userid = $this->task->get_userid();
-
+        $newroleid = $this->get_mappingid('role', $data->roleid);
         // If newroleid and context are valid assign it via API (it handles dupes and so on)
         if ($newroleid && $this->task->get_contextid()) {
-            if (!$capability = get_capability_info($data->capability)) {
-                $this->log("Capability '{$data->capability}' was not found!", backup::LOG_WARNING);
-            } else {
-                $context = context::instance_by_id($this->task->get_contextid());
-                $overrideableroles = get_overridable_roles($context, ROLENAME_SHORT);
-                $safecapability = is_safe_capability($capability);
-
-                // Check if the new role is an overrideable role AND if the user performing the restore has the
-                // capability to assign the capability.
-                if (in_array($newrole->info['shortname'], $overrideableroles) &&
-                    ($safecapability && has_capability('moodle/role:safeoverride', $context, $userid) ||
-                        !$safecapability && has_capability('moodle/role:override', $context, $userid))
-                ) {
-                    assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
-                } else {
-                    $this->log("Insufficient capability to assign capability '{$data->capability}' to role!", backup::LOG_WARNING);
-                }
-            }
+            // TODO: assign_capability() needs one userid param to be able to specify our restore userid
+            // TODO: it seems that assign_capability() doesn't check for valid capabilities at all ???
+            assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
         }
     }
 }
@@ -2132,22 +2114,11 @@ class restore_default_enrolments_step extends restore_execution_step {
         }
 
         $course = $DB->get_record('course', array('id'=>$this->get_courseid()), '*', MUST_EXIST);
-        // Return any existing course enrolment instances.
-        $enrolinstances = enrol_get_instances($course->id, false);
 
-        if ($enrolinstances) {
-            // Something already added instances.
-            // Get the existing enrolment methods in the course.
-            $enrolmethods = array_map(function($enrolinstance) {
-                return $enrolinstance->enrol;
-            }, $enrolinstances);
-
+        if ($DB->record_exists('enrol', array('courseid'=>$this->get_courseid(), 'enrol'=>'manual'))) {
+            // Something already added instances, do not add default instances.
             $plugins = enrol_get_plugins(true);
-            foreach ($plugins as $pluginname => $plugin) {
-                // Make sure all default enrolment methods exist in the course.
-                if (!in_array($pluginname, $enrolmethods)) {
-                    $plugin->course_updated(true, $course, null);
-                }
+            foreach ($plugins as $plugin) {
                 $plugin->restore_sync_course($course);
             }
 
@@ -2754,7 +2725,8 @@ class restore_calendarevents_structure_step extends restore_structure_step {
                 'uuid'           => $data->uuid,
                 'sequence'       => $data->sequence,
                 'timemodified'   => $data->timemodified,
-                'priority'       => isset($data->priority) ? $data->priority : null);
+                'priority'       => isset($data->priority) ? $data->priority : null,
+                'location'       => isset($data->location) ? $data->location : null);
         if ($this->name == 'activity_calendar') {
             $params['instance'] = $this->task->get_activityid();
         } else {
@@ -3733,6 +3705,10 @@ class restore_activity_grades_structure_step extends restore_structure_step {
     }
 
     protected function process_grade_grade($data) {
+        global $CFG;
+
+        require_once($CFG->libdir . '/grade/constants.php');
+
         $data = (object)($data);
         $olduserid = $data->userid;
         $oldid = $data->id;
@@ -3747,7 +3723,16 @@ class restore_activity_grades_structure_step extends restore_structure_step {
 
             $grade = new grade_grade($data, false);
             $grade->insert('restore');
-            $this->set_mapping('grade_grades', $oldid, $grade->id);
+
+            $this->set_mapping('grade_grades', $oldid, $grade->id, true);
+
+            $this->add_related_files(
+                GRADE_FILE_COMPONENT,
+                GRADE_FEEDBACK_FILEAREA,
+                'grade_grades',
+                null,
+                $oldid
+            );
         } else {
             debugging("Mapped user id not found for user id '{$olduserid}', grade item id '{$data->itemid}'");
         }
@@ -3822,9 +3807,12 @@ class restore_activity_grade_history_structure_step extends restore_structure_st
     }
 
     protected function process_grade_grade($data) {
-        global $DB;
+        global $CFG, $DB;
+
+        require_once($CFG->libdir . '/grade/constants.php');
 
         $data = (object) $data;
+        $oldhistoryid = $data->id;
         $olduserid = $data->userid;
         unset($data->id);
 
@@ -3835,13 +3823,23 @@ class restore_activity_grade_history_structure_step extends restore_structure_st
             $data->oldid = $this->get_mappingid('grade_grades', $data->oldid);
             $data->usermodified = $this->get_mappingid('user', $data->usermodified, null);
             $data->rawscaleid = $this->get_mappingid('scale', $data->rawscaleid);
-            $DB->insert_record('grade_grades_history', $data);
+
+            $newhistoryid = $DB->insert_record('grade_grades_history', $data);
+
+            $this->set_mapping('grade_grades_history', $oldhistoryid, $newhistoryid, true);
+
+            $this->add_related_files(
+                GRADE_FILE_COMPONENT,
+                GRADE_HISTORY_FEEDBACK_FILEAREA,
+                'grade_grades_history',
+                null,
+                $oldhistoryid
+            );
         } else {
             $message = "Mapped user id not found for user id '{$olduserid}', grade item id '{$data->itemid}'";
             $this->log($message, backup::LOG_DEBUG);
         }
     }
-
 }
 
 /**
@@ -4462,6 +4460,12 @@ class restore_create_categories_and_questions extends restore_structure_step {
                 $data->stamp = make_unique_id_code();
             }
 
+            // The idnumber if it exists also needs to be unique within a context or reset it to null.
+            if (!empty($data->idnumber) && $DB->record_exists('question_categories',
+                    ['idnumber' => $data->idnumber, 'contextid' => $data->contextid])) {
+                unset($data->idnumber);
+            }
+
             // Let's create the question_category and save mapping.
             $newitemid = $DB->insert_record('question_categories', $data);
             $this->set_mapping('question_category', $oldid, $newitemid);
@@ -4507,10 +4511,11 @@ class restore_create_categories_and_questions extends restore_structure_step {
 
         // With newitemid = 0, let's create the question
         if (!$questionmapping->newitemid) {
-            if ($data->qtype === 'random') {
-                // Ensure that this newly created question is considered by
-                // \qtype_random\task\remove_unused_questions.
-                $data->hidden = 0;
+
+            // The idnumber if it exists also needs to be unique within a category or reset it to null.
+            if (!empty($data->idnumber) && $DB->record_exists('question',
+                    ['idnumber' => $data->idnumber, 'category' => $data->category])) {
+                unset($data->idnumber);
             }
 
             $newitemid = $DB->insert_record('question', $data);

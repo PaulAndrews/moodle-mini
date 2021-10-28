@@ -383,8 +383,8 @@ function upgrade_block_savepoint($result, $version, $blockname, $allowabort=true
  * @category upgrade
  * @param bool $result false if upgrade step failed, true if completed
  * @param string or float $version main version
- * @param string $type The type of the plugin.
- * @param string $plugin The name of the plugin.
+ * @param string $type name of plugin
+ * @param string $dir location of plugin
  * @param bool $allowabort allow user to abort script execution here
  * @return void
  */
@@ -430,6 +430,12 @@ function upgrade_stale_php_files_present() {
     global $CFG;
 
     $someexamplesofremovedfiles = array(
+        // Removed in 3.6.
+        '/lib/classes/session/memcache.php',
+        '/lib/eventslib.php',
+        '/lib/form/submitlink.php',
+        '/lib/medialib.php',
+        '/lib/password_compat/lib/password.php',
         // Removed in 3.5.
         '/lib/dml/mssql_native_moodle_database.php',
         '/lib/dml/mssql_native_moodle_recordset.php',
@@ -571,7 +577,6 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
                     update_capabilities($component);
                     log_update_descriptions($component);
                     external_update_descriptions($component);
-                    events_update_definition($component);
                     \core\task\manager::reset_scheduled_tasks_for_component($component);
                     message_update_providers($component);
                     \core\message\inbound\manager::update_handlers_for_component($component);
@@ -610,7 +615,6 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
-            events_update_definition($component);
             \core\task\manager::reset_scheduled_tasks_for_component($component);
             message_update_providers($component);
             \core\message\inbound\manager::update_handlers_for_component($component);
@@ -644,7 +648,6 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
-            events_update_definition($component);
             \core\task\manager::reset_scheduled_tasks_for_component($component);
             message_update_providers($component);
             \core\message\inbound\manager::update_handlers_for_component($component);
@@ -752,7 +755,6 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
                     update_capabilities($component);
                     log_update_descriptions($component);
                     external_update_descriptions($component);
-                    events_update_definition($component);
                     \core\task\manager::reset_scheduled_tasks_for_component($component);
                     message_update_providers($component);
                     \core\message\inbound\manager::update_handlers_for_component($component);
@@ -787,7 +789,6 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
-            events_update_definition($component);
             \core\task\manager::reset_scheduled_tasks_for_component($component);
             message_update_providers($component);
             \core\message\inbound\manager::update_handlers_for_component($component);
@@ -824,7 +825,6 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
-            events_update_definition($component);
             \core\task\manager::reset_scheduled_tasks_for_component($component);
             message_update_providers($component);
             \core\message\inbound\manager::update_handlers_for_component($component);
@@ -946,7 +946,6 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
                     update_capabilities($component);
                     log_update_descriptions($component);
                     external_update_descriptions($component);
-                    events_update_definition($component);
                     \core\task\manager::reset_scheduled_tasks_for_component($component);
                     message_update_providers($component);
                     \core\message\inbound\manager::update_handlers_for_component($component);
@@ -987,7 +986,6 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
-            events_update_definition($component);
             \core\task\manager::reset_scheduled_tasks_for_component($component);
             message_update_providers($component);
             \core\message\inbound\manager::update_handlers_for_component($component);
@@ -1023,7 +1021,6 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
             update_capabilities($component);
             log_update_descriptions($component);
             external_update_descriptions($component);
-            events_update_definition($component);
             \core\task\manager::reset_scheduled_tasks_for_component($component);
             message_update_providers($component);
             \core\message\inbound\manager::update_handlers_for_component($component);
@@ -1740,7 +1737,6 @@ function install_core($version, $verbose) {
         // Continue with the installation
         log_update_descriptions('moodle');
         external_update_descriptions('moodle');
-        events_update_definition('moodle');
         \core\task\manager::reset_scheduled_tasks_for_component('moodle');
         message_update_providers('moodle');
         \core\message\inbound\manager::update_handlers_for_component('moodle');
@@ -1808,7 +1804,6 @@ function upgrade_core($version, $verbose) {
         update_capabilities('moodle');
         log_update_descriptions('moodle');
         external_update_descriptions('moodle');
-        events_update_definition('moodle');
         \core\task\manager::reset_scheduled_tasks_for_component('moodle');
         message_update_providers('moodle');
         \core\message\inbound\manager::update_handlers_for_component('moodle');
@@ -2647,9 +2642,6 @@ function upgrade_fix_config_auth_plugin_defaults($plugin) {
         include($settingspath);
 
         if ($settings) {
-            // Consistently with what admin/cli/upgrade.php does, apply the default settings twice.
-            // I assume this is done for theoretical cases when a default value depends on an other.
-            admin_apply_default_settings($settings, false);
             admin_apply_default_settings($settings, false);
         }
     }
@@ -2716,28 +2708,4 @@ function upgrade_find_theme_location($themename) {
     }
 
     return $dir;
-}
-
-/**
- * Environment check for the php setting max_input_vars
- *
- * @param environment_results $result
- * @return environment_results|null
- */
-function check_max_input_vars(environment_results $result) {
-    $max = (int)ini_get('max_input_vars');
-    if ($max < 5000) {
-        $result->setInfo('max_input_vars');
-        $result->setStatus(false);
-        if (PHP_VERSION_ID >= 80000) {
-            // For PHP8 this check is required.
-            $result->setLevel('required');
-            $result->setFeedbackStr('settingmaxinputvarsrequired');
-        } else {
-            // For PHP7 this check is optional (recommended).
-            $result->setFeedbackStr('settingmaxinputvars');
-        }
-        return $result;
-    }
-    return null;
 }

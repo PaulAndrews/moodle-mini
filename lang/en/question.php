@@ -132,7 +132,7 @@ $string['errorduringregrade'] = 'Could not regrade question {$a->qid}, going to 
 $string['errorfilecannotbecopied'] = 'Error: cannot copy file {$a}.';
 $string['errorfilecannotbemoved'] = 'Error: cannot move file {$a}.';
 $string['errorfileschanged'] = 'Error: files linked to from questions have changed since form was displayed.';
-$string['erroritemappearsmorethanoncewithdifferentweight'] = 'Question ({$a}) appears more than once with different weights in different positions of the test. This is not currently supported by the statistics report and may make the statistics for this question unreliable.';
+$string['erroritemappearsmorethanoncewithdifferentweight'] = 'The question ({$a}) appears more than once with different weights in different positions of the test. This is not currently supported by the statistics report and may make the statistics for this question unreliable.';
 $string['errormanualgradeoutofrange'] = 'The grade {$a->grade} is not between 0 and {$a->maxgrade} for question {$a->name}. The score and comment have not been saved.';
 $string['errormovingquestions'] = 'Error while moving questions with ids {$a}.';
 $string['errorpostprocess'] = 'Error occurred during post-processing!';
@@ -150,6 +150,7 @@ Certain import formats, such as GIFT and Moodle XML, permit category and context
 $string['exporterror'] = 'Errors occur during exporting!';
 $string['exportfilename'] = 'questions';
 $string['exportnameformat'] = '%Y%m%d-%H%M';
+$string['exportonequestion'] = 'Download this question in Moodle XML format';
 $string['exportquestions'] = 'Export questions to file';
 $string['exportquestions_help'] = 'This function enables the export of a complete category (and any subcategories) of questions to file. Please note that, depending on the file format selected, some question data and certain question types may not be exported.';
 $string['exportquestions_link'] = 'question/export';
@@ -170,6 +171,8 @@ $string['getcontextfromfile'] = 'Get context from file';
 $string['changepublishstatuscat'] = '<a href="{$a->caturl}">Category "{$a->name}"</a> in course "{$a->coursename}" will have it\'s sharing status changed from <strong>{$a->changefrom} to {$a->changeto}</strong>.';
 $string['chooseqtypetoadd'] = 'Choose a question type to add';
 $string['editquestions'] = 'Edit questions';
+$string['idnumber'] = 'ID number';
+$string['idnumber_help'] = 'If used, the ID number must be unique within each question category. It provides another way of identifying a question which is sometimes useful, but can usually be left blank.';
 $string['ignorebroken'] = 'Ignore broken links';
 $string['impossiblechar'] = 'Impossible character {$a} detected as parenthesis character';
 $string['import'] = 'Import';
@@ -384,9 +387,7 @@ $string['partiallycorrectfeedbackdefault'] = 'Your answer is partially correct.'
 $string['penaltyforeachincorrecttry'] = 'Penalty for each incorrect try';
 $string['penaltyforeachincorrecttry_help'] = 'When questions are run using the \'Interactive with multiple tries\' or \'Adaptive mode\' behaviour, so that the student will have several tries to get the question right, then this option controls how much they are penalised for each incorrect try.
 
-The penalty is a proportion of the total question grade, so if the question is worth three marks, and the penalty is 0.3333333, then the student will score 3 if they get the question right first time, 2 if they get it right second try, and 1 of they get it right on the third try.
-
-For some multi-part questions this scoring logic is applied separately to each part of the question. The details depend on the question type and can be complicated, but the principle is to give students credit for the knowledge they have demonstrated as fairly as possible.';
+The penalty is a proportion of the total question grade, so if the question is worth three marks, and the penalty is 0.3333333, then the student will score 3 if they get the question right first time, 2 if they get it right second try, and 1 of they get it right on the third try.';
 $string['previewquestion'] = 'Preview question: {$a}';
 $string['privacy:metadata:database:question'] = 'The details about a specific question.';
 $string['privacy:metadata:database:question:createdby'] = 'The person who created the question.';
@@ -413,9 +414,9 @@ $string['privacy:metadata:link:qformat'] = 'The Question subsystem makes use of 
 $string['privacy:metadata:link:qtype'] = 'The Question subsystem interacts with the Question Type plugintype which contains the different types of questions.';
 $string['questionbehaviouradminsetting'] = 'Question behaviour settings';
 $string['questionbehavioursdisabled'] = 'Question behaviours to disable';
-$string['questionbehavioursdisabledexplained'] = 'Enter a comma-separated list of behaviours you do not want to appear in the drop-down menu.';
+$string['questionbehavioursdisabledexplained'] = 'Enter a comma separated list of behaviours you do not want to appear in dropdown menu';
 $string['questionbehavioursorder'] = 'Question behaviours order';
-$string['questionbehavioursorderexplained'] = 'Enter a comma-separated list of behaviours in the order you want them to appear in the drop-down menu.';
+$string['questionbehavioursorderexplained'] = 'Enter a comma separated list of behaviours in the order you want them to appear in dropdown menu';
 $string['questionidmismatch'] = 'Question ids mismatch';
 $string['questionformtagheader'] = '{$a} tags';
 $string['questionname'] = 'Question name';

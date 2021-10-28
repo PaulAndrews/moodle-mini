@@ -534,10 +534,9 @@ function mod_assign_get_completion_active_rule_descriptions($cm) {
     foreach ($cm->customdata['customcompletionrules'] as $key => $val) {
         switch ($key) {
             case 'completionsubmit':
-                if (empty($val)) {
-                    continue;
+                if (!empty($val)) {
+                    $descriptions[] = get_string('completionsubmit', 'assign');
                 }
-                $descriptions[] = get_string('completionsubmit', 'assign');
                 break;
             default:
                 break;
@@ -1296,7 +1295,10 @@ function assign_cron() {
  * @return array Array of capability strings
  */
 function assign_get_extra_capabilities() {
-    return ['gradereport/grader:view', 'moodle/grade:viewall'];
+    return array('gradereport/grader:view',
+                 'moodle/grade:viewall',
+                 'moodle/site:viewfullnames',
+                 'moodle/site:config');
 }
 
 /**
@@ -1628,11 +1630,7 @@ function assign_user_outline($course, $user, $coursemodule, $assignment) {
         return null;
     }
     $result = new stdClass();
-    if (!$gradingitem->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-        $result->info = get_string('outlinegrade', 'assign', $gradebookgrade->str_long_grade);
-    } else {
-        $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
-    }
+    $result->info = get_string('outlinegrade', 'assign', $gradebookgrade->str_long_grade);
     $result->time = $gradebookgrade->dategraded;
 
     return $result;

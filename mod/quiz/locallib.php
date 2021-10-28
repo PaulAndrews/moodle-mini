@@ -37,7 +37,6 @@ require_once($CFG->dirroot . '/mod/quiz/accessmanager_form.php');
 require_once($CFG->dirroot . '/mod/quiz/renderer.php');
 require_once($CFG->dirroot . '/mod/quiz/attemptlib.php');
 require_once($CFG->libdir . '/completionlib.php');
-require_once($CFG->libdir . '/eventslib.php');
 require_once($CFG->libdir . '/filelib.php');
 require_once($CFG->libdir . '/questionlib.php');
 
@@ -2314,8 +2313,8 @@ function quiz_validate_new_attempt(quiz $quizobj, quiz_access_manager $accessman
     // Check to see if a new preview was requested.
     if ($quizobj->is_preview_user() && $forcenew) {
         // To force the creation of a new preview, we mark the current attempt (if any)
-        // as abandoned. It will then automatically be deleted below.
-        $DB->set_field('quiz_attempts', 'state', quiz_attempt::ABANDONED,
+        // as finished. It will then automatically be deleted below.
+        $DB->set_field('quiz_attempts', 'state', quiz_attempt::FINISHED,
                 array('quiz' => $quizobj->get_quizid(), 'userid' => $USER->id));
     }
 
@@ -2374,14 +2373,19 @@ function quiz_validate_new_attempt(quiz $quizobj, quiz_access_manager $accessman
 /**
  * Prepare and start a new attempt deleting the previous preview attempts.
  *
- * @param  quiz $quizobj quiz object
- * @param  int $attemptnumber the attempt number
- * @param  object $lastattempt last attempt object
+ * @param quiz $quizobj quiz object
+ * @param int $attemptnumber the attempt number
+ * @param object $lastattempt last attempt object
  * @param bool $offlineattempt whether is an offline attempt or not
+ * @param array $forcedrandomquestions slot number => question id. Used for random questions,
+ *      to force the choice of a particular actual question. Intended for testing purposes only.
+ * @param array $forcedvariants slot number => variant. Used for questions with variants,
+ *      to force the choice of a particular variant. Intended for testing purposes only.
  * @return object the new attempt
  * @since  Moodle 3.1
  */
-function quiz_prepare_and_start_new_attempt(quiz $quizobj, $attemptnumber, $lastattempt, $offlineattempt = false) {
+function quiz_prepare_and_start_new_attempt(quiz $quizobj, $attemptnumber, $lastattempt,
+        $offlineattempt = false, $forcedrandomquestions = [], $forcedvariants = []) {
     global $DB, $USER;
 
     // Delete any previous preview attempts belonging to this user.
@@ -2395,7 +2399,8 @@ function quiz_prepare_and_start_new_attempt(quiz $quizobj, $attemptnumber, $last
     $attempt = quiz_create_attempt($quizobj, $attemptnumber, $lastattempt, $timenow, $quizobj->is_preview_user());
 
     if (!($quizobj->get_quiz()->attemptonlast && $lastattempt)) {
-        $attempt = quiz_start_new_attempt($quizobj, $quba, $attempt, $attemptnumber, $timenow);
+        $attempt = quiz_start_new_attempt($quizobj, $quba, $attempt, $attemptnumber, $timenow,
+                $forcedrandomquestions, $forcedvariants);
     } else {
         $attempt = quiz_start_attempt_built_on_last($quba, $attempt, $lastattempt);
     }
@@ -2461,13 +2466,13 @@ function quiz_is_overriden_calendar_event(\calendar_event $event) {
  * has one tag, and the third has zero tags. The return structure will look like:
  * [
  *      1 => [
- *          quiz_slot_tags.id => { ...tag data... },
- *          quiz_slot_tags.id => { ...tag data... },
+ *          { ...tag data... },
+ *          { ...tag data... },
  *      ],
  *      2 => [
- *          quiz_slot_tags.id => { ...tag data... },
+ *          { ...tag data... }
  *      ],
- *      3 => [],
+ *      3 => []
  * ]
  *
  * @param int[] $slotids The list of id for the quiz slots.
@@ -2519,7 +2524,7 @@ function quiz_retrieve_tags_for_slot_ids($slotids) {
                 }
             }
 
-            $carry[$slottag->slotid][$slottag->id] = $slottag;
+            $carry[$slottag->slotid][] = $slottag;
             return $carry;
         },
         $emptytagids

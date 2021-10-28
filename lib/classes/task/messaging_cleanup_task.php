@@ -46,18 +46,13 @@ class messaging_cleanup_task extends scheduled_task {
 
         $timenow = time();
 
-        // Cleanup read and unread notifications.
-        if (!empty($CFG->messagingdeleteallnotificationsdelay)) {
-            $notificationdeletetime = $timenow - $CFG->messagingdeleteallnotificationsdelay;
-            $params = array('notificationdeletetime' => $notificationdeletetime);
-            $DB->delete_records_select('notifications', 'timecreated < :notificationdeletetime', $params);
-        }
-
-        // Cleanup read notifications.
+        // Cleanup messaging.
         if (!empty($CFG->messagingdeletereadnotificationsdelay)) {
             $notificationdeletetime = $timenow - $CFG->messagingdeletereadnotificationsdelay;
             $params = array('notificationdeletetime' => $notificationdeletetime);
             $DB->delete_records_select('notifications', 'timeread < :notificationdeletetime', $params);
         }
+
     }
+
 }

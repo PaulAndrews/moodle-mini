@@ -693,7 +693,15 @@ class tool_uploadcourse_course {
             return false;
         }
 
-        // TODO MDL-59259 allow to set course format options for the current course format.
+        // Add data for course format options.
+        if (isset($coursedata['format']) || $exists) {
+            if (isset($coursedata['format'])) {
+                $courseformat = course_get_format((object)['format' => $coursedata['format']]);
+            } else {
+                $courseformat = course_get_format($existingdata);
+            }
+            $coursedata += $courseformat->validate_course_format_options($this->rawdata);
+        }
 
         // Special case, 'numsections' is not a course format option any more but still should apply from defaults.
         if (!$exists || !array_key_exists('numsections', $coursedata)) {
@@ -838,31 +846,36 @@ class tool_uploadcourse_course {
             unset($method['delete']);
             unset($method['disable']);
 
-            if ($todelete) {
+            if (!empty($instance) && $todelete) {
                 // Remove the enrolment method.
-                if ($instance) {
-                    $plugin = $enrolmentplugins[$instance->enrol];
-                    $plugin->delete_instance($instance);
+                foreach ($instances as $instance) {
+                    if ($instance->enrol == $enrolmethod) {
+                        $plugin = $enrolmentplugins[$instance->enrol];
+                        $plugin->delete_instance($instance);
+                        break;
+                    }
                 }
             } else if (!empty($instance) && $todisable) {
                 // Disable the enrolment.
-                $plugin = $enrolmentplugins[$instance->enrol];
-                $plugin->update_status($instance, ENROL_INSTANCE_DISABLED);
-                $enrol_updated = true;
+                foreach ($instances as $instance) {
+                    if ($instance->enrol == $enrolmethod) {
+                        $plugin = $enrolmentplugins[$instance->enrol];
+                        $plugin->update_status($instance, ENROL_INSTANCE_DISABLED);
+                        $enrol_updated = true;
+                        break;
+                    }
+                }
             } else {
                 $plugin = null;
-
-                $status = ($todisable) ? ENROL_INSTANCE_DISABLED : ENROL_INSTANCE_ENABLED;
-
                 if (empty($instance)) {
                     $plugin = $enrolmentplugins[$enrolmethod];
-                    $instanceid = $plugin->add_default_instance($course);
-                    $instance = $DB->get_record('enrol', ['id' => $instanceid]);
+                    $instance = new stdClass();
+                    $instance->id = $plugin->add_default_instance($course);
                     $instance->roleid = $plugin->get_config('roleid');
-                    $plugin->update_status($instance, $status);
+                    $instance->status = ENROL_INSTANCE_ENABLED;
                 } else {
                     $plugin = $enrolmentplugins[$instance->enrol];
-                    $plugin->update_status($instance, $status);
+                    $plugin->update_status($instance, ENROL_INSTANCE_ENABLED);
                 }
 
                 // Now update values.

@@ -1192,20 +1192,12 @@ function data_user_outline($course, $user, $mod, $data) {
                                            ORDER BY timemodified DESC', array($data->id, $user->id), true);
         $result->time = $lastrecord->timemodified;
         if ($grade) {
-            if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-                $result->info .= ', ' . get_string('grade') . ': ' . $grade->str_long_grade;
-            } else {
-                $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
-            }
+            $result->info .= ', ' . get_string('grade') . ': ' . $grade->str_long_grade;
         }
         return $result;
     } else if ($grade) {
         $result = new stdClass();
-        if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            $result->info = get_string('grade') . ': ' . $grade->str_long_grade;
-        } else {
-            $result->info = get_string('grade') . ': ' . get_string('hidden', 'grades');
-        }
+        $result->info = get_string('grade') . ': ' . $grade->str_long_grade;
 
         //datesubmitted == time created. dategraded == time modified or time overridden
         //if grade was last modified by the user themselves use date graded. Otherwise use date submitted
@@ -1237,13 +1229,9 @@ function data_user_complete($course, $user, $mod, $data) {
     $grades = grade_get_grades($course->id, 'mod', 'data', $data->id, $user->id);
     if (!empty($grades->items[0]->grades)) {
         $grade = reset($grades->items[0]->grades);
-        if (!$grade->hidden || has_capability('moodle/grade:viewhidden', context_course::instance($course->id))) {
-            echo $OUTPUT->container(get_string('grade').': '.$grade->str_long_grade);
-            if ($grade->str_feedback) {
-                echo $OUTPUT->container(get_string('feedback').': '.$grade->str_feedback);
-            }
-        } else {
-            echo $OUTPUT->container(get_string('grade') . ': ' . get_string('hidden', 'grades'));
+        echo $OUTPUT->container(get_string('grade').': '.$grade->str_long_grade);
+        if ($grade->str_feedback) {
+            echo $OUTPUT->container(get_string('feedback').': '.$grade->str_feedback);
         }
     }
 
@@ -3015,8 +3003,7 @@ function data_reset_userdata($data) {
  * @return array
  */
 function data_get_extra_capabilities() {
-    return ['moodle/rating:view', 'moodle/rating:viewany', 'moodle/rating:viewall', 'moodle/rating:rate',
-            'moodle/comment:view', 'moodle/comment:post', 'moodle/comment:delete'];
+    return array('moodle/site:accessallgroups', 'moodle/site:viewfullnames', 'moodle/rating:view', 'moodle/rating:viewany', 'moodle/rating:viewall', 'moodle/rating:rate', 'moodle/comment:view', 'moodle/comment:post', 'moodle/comment:delete');
 }
 
 /**
@@ -4568,10 +4555,9 @@ function mod_data_get_completion_active_rule_descriptions($cm) {
     foreach ($cm->customdata['customcompletionrules'] as $key => $val) {
         switch ($key) {
             case 'completionentries':
-                if (empty($val)) {
-                    continue;
+                if (!empty($val)) {
+                    $descriptions[] = get_string('completionentriesdesc', 'data', $val);
                 }
-                $descriptions[] = get_string('completionentriesdesc', 'data', $val);
                 break;
             default:
                 break;

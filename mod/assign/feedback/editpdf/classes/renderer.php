@@ -139,14 +139,16 @@ class assignfeedback_editpdf_renderer extends plugin_renderer_base {
             $nav_next = 'nav_next';
         }
 
-        $iconalt = get_string('navigateprevious', 'assignfeedback_editpdf');
+        $iconshortcut = $this->get_shortcut('navigate-previous-button');
+        $iconalt = get_string('navigateprevious', 'assignfeedback_editpdf', $iconshortcut);
         $iconhtml = $this->image_icon($nav_prev, $iconalt, 'assignfeedback_editpdf');
         $navigation1 .= html_writer::tag('button', $iconhtml, array('disabled'=>'true',
             'class'=>'navigate-previous-button', 'accesskey' => $this->get_shortcut('navigate-previous-button')));
         $navigation1 .= html_writer::tag('select', null, array('disabled'=>'true',
             'aria-label' => get_string('gotopage', 'assignfeedback_editpdf'), 'class'=>'navigate-page-select',
             'accesskey' => $this->get_shortcut('navigate-page-select')));
-        $iconalt = get_string('navigatenext', 'assignfeedback_editpdf');
+        $iconshortcut = $this->get_shortcut('navigate-next-button');
+        $iconalt = get_string('navigatenext', 'assignfeedback_editpdf', $iconshortcut);
         $iconhtml = $this->image_icon($nav_next, $iconalt, 'assignfeedback_editpdf');
         $navigation1 .= html_writer::tag('button', $iconhtml, array('disabled'=>'true',
             'class'=>'navigate-next-button', 'accesskey' => $this->get_shortcut('navigate-next-button')));
@@ -215,13 +217,14 @@ class assignfeedback_editpdf_renderer extends plugin_renderer_base {
 
         $canvas = html_writer::div($loading, 'drawingcanvas');
         $canvas = html_writer::div($canvas, 'drawingregion');
-        // Place for messages, but no warnings displayed yet.
-        $changesmessage = html_writer::div('', 'warningmessages');
-        $canvas .= $changesmessage;
+        $changesmessage = html_writer::tag('div',
+                                           get_string('draftchangessaved', 'assignfeedback_editpdf'),
+                                           array(
+                                               'class' => 'assignfeedback_editpdf_unsavedchanges warning label label-info'
+                                           ));
 
-        $infoicon = $this->image_icon('i/info', '');
-        $infomessage = html_writer::div($infoicon, 'infoicon');
-        $canvas .= $infomessage;
+        $changesmessage = html_writer::div($changesmessage, 'unsaved-changes');
+        $canvas .= $changesmessage;
 
         $body .= $canvas;
 
@@ -265,9 +268,7 @@ class assignfeedback_editpdf_renderer extends plugin_renderer_base {
             'stamp',
             'stamppicker',
             'cannotopenpdf',
-            'pagenumber',
-            'partialwarning',
-            'draftchangessaved'
+            'pagenumber'
         ), 'assignfeedback_editpdf');
 
         return $html;

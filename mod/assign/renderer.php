@@ -267,6 +267,10 @@ class mod_assign_renderer extends plugin_renderer_base {
         $o .= $this->output->box_start('boxaligncenter gradingsummarytable');
         $t = new html_table();
 
+        // Visibility Status.
+        $this->add_table_row_tuple($t, get_string('hiddenfromstudents'),
+            (!$summary->isvisible) ? get_string('yes') : get_string('no'));
+
         // Status.
         if ($summary->teamsubmission) {
             if ($summary->warnofungroupedusers) {
@@ -1103,13 +1107,11 @@ class mod_assign_renderer extends plugin_renderer_base {
                 $cell2 = new html_table_cell(userdate($grade->timemodified));
                 $t->data[] = new html_table_row(array($cell1, $cell2));
 
-                // Graded by set to a real user. Not set can be empty or -1.
-                if (!empty($grade->grader) && is_object($grade->grader)) {
-                    $cell1 = new html_table_cell($gradedbystr);
-                    $cell2 = new html_table_cell($this->output->user_picture($grade->grader) .
-                                                 $this->output->spacer(array('width' => 30)) . fullname($grade->grader));
-                    $t->data[] = new html_table_row(array($cell1, $cell2));
-                }
+                // Graded by.
+                $cell1 = new html_table_cell($gradedbystr);
+                $cell2 = new html_table_cell($this->output->user_picture($grade->grader) .
+                                             $this->output->spacer(array('width'=>30)) . fullname($grade->grader));
+                $t->data[] = new html_table_row(array($cell1, $cell2));
 
                 // Feedback from plugins.
                 foreach ($history->feedbackplugins as $plugin) {
@@ -1421,11 +1423,15 @@ class mod_assign_renderer extends plugin_renderer_base {
                                              'moodle',
                                              array('class'=>'icon'));
             $result .= '<li yuiConfig=\'' . json_encode($yuiconfig) . '\'>' .
-                       '<div>' . $image . ' ' .
-                                 $file->fileurl . ' ' .
-                                 $plagiarismlinks . ' ' .
-                                 $file->portfoliobutton . '</div>' .
-                       '</li>';
+                '<div>' .
+                    '<div class="fileuploadsubmission">' . $image . ' ' .
+                    $file->fileurl . ' ' .
+                    $plagiarismlinks . ' ' .
+                    $file->portfoliobutton . ' ' .
+                    '</div>' .
+                    '<div class="fileuploadsubmissiontime">' . $file->timemodified . '</div>' .
+                '</div>' .
+            '</li>';
         }
 
         $result .= '</ul>';

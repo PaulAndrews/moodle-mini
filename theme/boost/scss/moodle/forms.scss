@@ -126,8 +126,10 @@ input#id_externalurl {
 // Pale grey container for submit buttons.
 .form-buttons,
 .path-admin .buttons,
+#fitem_id_submitbutton,
 .fp-content-center form + div,
-div.backup-section + form {
+div.backup-section + form,
+#fgroup_id_buttonar {
     @extend .form-group;
     padding-left: 0;
 }
@@ -167,11 +169,6 @@ div.backup-section + form {
 .mform .fitem .felement input[name="phone2"] {
     text-align: left;
     direction: ltr;
-}
-
-// Reduce the mediaplugin width when using inside forms.
-.que.match .mediaplugin {
-    width: 50vw;
 }
 
 /* rtl:ignore */

@@ -28,7 +28,6 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->libdir . '/eventslib.php');
 require_once($CFG->dirroot . '/calendar/lib.php');
 
 
@@ -1172,7 +1171,7 @@ function quiz_review_option_form_to_db($fromform, $field) {
     $review = 0;
     foreach ($times as $whenname => $when) {
         $fieldname = $field . $whenname;
-        if (!empty($fromform->$fieldname)) {
+        if (isset($fromform->$fieldname)) {
             $review |= $when;
             unset($fromform->$fieldname);
         }
@@ -1800,7 +1799,9 @@ function quiz_supports($feature) {
 function quiz_get_extra_capabilities() {
     global $CFG;
     require_once($CFG->libdir . '/questionlib.php');
-    return question_get_all_capabilities();
+    $caps = question_get_all_capabilities();
+    $caps[] = 'moodle/site:accessallgroups';
+    return $caps;
 }
 
 /**
@@ -2161,43 +2162,31 @@ function mod_quiz_get_fontawesome_icon_map() {
  *
  * @param calendar_event $event
  * @param \core_calendar\action_factory $factory
- * @param int $userid User id to use for all capability checks, etc. Set to 0 for current user (default).
  * @return \core_calendar\local\event\entities\action_interface|null
  */
 function mod_quiz_core_calendar_provide_event_action(calendar_event $event,
-                                                     \core_calendar\action_factory $factory,
-                                                     int $userid = 0) {
+                                                     \core_calendar\action_factory $factory) {
     global $CFG, $USER;
 
     require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
-    if (empty($userid)) {
-        $userid = $USER->id;
-    }
-
-    $cm = get_fast_modinfo($event->courseid, $userid)->instances['quiz'][$event->instance];
-    $quizobj = quiz::create($cm->instance, $userid);
+    $cm = get_fast_modinfo($event->courseid)->instances['quiz'][$event->instance];
+    $quizobj = quiz::create($cm->instance, $USER->id);
     $quiz = $quizobj->get_quiz();
 
     // Check they have capabilities allowing them to view the quiz.
-    if (!has_any_capability(['mod/quiz:reviewmyattempts', 'mod/quiz:attempt'], $quizobj->get_context(), $userid)) {
+    if (!has_any_capability(array('mod/quiz:reviewmyattempts', 'mod/quiz:attempt'), $quizobj->get_context())) {
         return null;
     }
 
-    quiz_update_effective_access($quiz, $userid);
+    quiz_update_effective_access($quiz, $USER->id);
 
     // Check if quiz is closed, if so don't display it.
     if (!empty($quiz->timeclose) && $quiz->timeclose <= time()) {
         return null;
     }
 
-    if (!$quizobj->is_participant($userid)) {
-        // If the user is not a participant then they have
-        // no action to take. This will filter out the events for teachers.
-        return null;
-    }
-
-    $attempts = quiz_get_user_attempts($quizobj->get_quizid(), $userid);
+    $attempts = quiz_get_user_attempts($quizobj->get_quizid(), $USER->id);
     if (!empty($attempts)) {
         // The student's last attempt is finished.
         return null;
@@ -2277,16 +2266,14 @@ function mod_quiz_get_completion_active_rule_descriptions($cm) {
     foreach ($cm->customdata['customcompletionrules'] as $key => $val) {
         switch ($key) {
             case 'completionattemptsexhausted':
-                if (empty($val)) {
-                    continue;
+                if (!empty($val)) {
+                    $descriptions[] = get_string('completionattemptsexhausteddesc', 'quiz');
                 }
-                $descriptions[] = get_string('completionattemptsexhausteddesc', 'quiz');
                 break;
             case 'completionpass':
-                if (empty($val)) {
-                    continue;
+                if (!empty($val)) {
+                    $descriptions[] = get_string('completionpassdesc', 'quiz', format_time($val));
                 }
-                $descriptions[] = get_string('completionpassdesc', 'quiz', format_time($val));
                 break;
             default:
                 break;

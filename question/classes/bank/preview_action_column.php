@@ -34,4 +34,8 @@ class preview_action_column extends action_column_base {
                     $question->id, $this->qbank->get_most_specific_context(), false);
         }
     }
+
+    public function get_required_fields() {
+        return array('q.id');
+    }
 }

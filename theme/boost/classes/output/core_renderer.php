@@ -31,7 +31,6 @@ use preferences_groups;
 use action_menu;
 use help_icon;
 use single_button;
-use paging_bar;
 use context_course;
 use pix_icon;
 
@@ -132,7 +131,7 @@ class core_renderer extends \core_renderer {
         if ($this->should_display_main_logo($headinglevel)) {
             $sitename = format_string($SITE->fullname, true, array('context' => context_course::instance(SITEID)));
             return html_writer::div(html_writer::empty_tag('img', [
-                'src' => $this->get_logo_url(null, 150), 'alt' => $sitename, 'class' => 'img-fluid']), 'logo');
+                'src' => $this->get_logo_url(null, 150), 'alt' => $sitename]), 'logo');
         }
 
         return parent::context_header($headerinfo, $headinglevel);
@@ -337,7 +336,6 @@ class core_renderer extends \core_renderer {
         $context->showskiplink = !empty($context->skiptitle);
         $context->arialabel = $bc->arialabel;
         $context->ariarole = !empty($bc->attributes['role']) ? $bc->attributes['role'] : 'complementary';
-        $context->class = $bc->attributes['class'];
         $context->type = $bc->attributes['data-block'];
         $context->title = $bc->title;
         $context->content = $bc->content;
@@ -419,30 +417,22 @@ class core_renderer extends \core_renderer {
     }
 
     /**
-     * Renders a paging bar.
-     *
-     * @param paging_bar $pagingbar The object.
-     * @return string HTML
-     */
-    protected function render_paging_bar(paging_bar $pagingbar) {
-        // Any more than 10 is not usable and causes wierd wrapping of the pagination in this theme.
-        $pagingbar->maxdisplay = 10;
-        return $this->render_from_template('core/paging_bar', $pagingbar->export_for_template($this));
-    }
-
-    /**
      * Renders the login form.
      *
      * @param \core_auth\output\login $form The renderable.
      * @return string
      */
     public function render_login(\core_auth\output\login $form) {
-        global $SITE;
+        global $CFG, $SITE;
 
         $context = $form->export_for_template($this);
 
         // Override because rendering is not supported in template yet.
-        $context->cookieshelpiconformatted = $this->help_icon('cookiesenabled');
+        if ($CFG->rememberusername == 0) {
+            $context->cookieshelpiconformatted = $this->help_icon('cookiesenabledonlysession');
+        } else {
+            $context->cookieshelpiconformatted = $this->help_icon('cookiesenabled');
+        }
         $context->errorformatted = $this->error_text($context->error);
         $url = $this->get_logo_url();
         if ($url) {
@@ -545,7 +535,7 @@ class core_renderer extends \core_renderer {
                 if ($skipped) {
                     $text = get_string('morenavigationlinks');
                     $url = new moodle_url('/course/admin.php', array('courseid' => $this->page->course->id));
-                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', ''));
+                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
                     $menu->add_secondary_action($link);
                 }
             }
@@ -559,7 +549,7 @@ class core_renderer extends \core_renderer {
                 if ($skipped) {
                     $text = get_string('morenavigationlinks');
                     $url = new moodle_url('/course/admin.php', array('courseid' => $this->page->course->id));
-                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', ''));
+                    $link = new action_link($url, $text, null, null, new pix_icon('t/edit', $text));
                     $menu->add_secondary_action($link);
                 }
             }

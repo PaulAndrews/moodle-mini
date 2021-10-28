@@ -179,13 +179,12 @@ function theme_get_css_filename($themename, $globalrevision, $themerevision, $di
  * @param theme_config[] $themeconfigs An array of theme_config instances.
  * @param array          $directions   Must be a subset of ['rtl', 'ltr'].
  * @param bool           $cache        Should the generated files be stored in local cache.
- * @return array         The built theme content in a multi-dimensional array of name => direction => content
  */
-function theme_build_css_for_themes($themeconfigs = [], $directions = ['rtl', 'ltr'], $cache = true): array {
+function theme_build_css_for_themes($themeconfigs = [], $directions = ['rtl', 'ltr'], $cache = true) {
     global $CFG;
 
     if (empty($themeconfigs)) {
-        return [];
+        return;
     }
 
     require_once("{$CFG->libdir}/csslib.php");
@@ -213,7 +212,7 @@ function theme_build_css_for_themes($themeconfigs = [], $directions = ['rtl', 'l
                 css_store_css($themeconfig, $filename, $themecss[$direction]);
             }
         }
-        $themescss[$themeconfig->name] = $themecss;
+        $themescss[] = $themecss;
 
         if ($cache) {
             // Only update the theme revision after we've successfully created the
@@ -750,7 +749,7 @@ class theme_config {
             'parents', 'sheets', 'parents_exclude_sheets', 'plugins_exclude_sheets', 'usefallback',
             'javascripts', 'javascripts_footer', 'parents_exclude_javascripts',
             'layouts', 'enable_dock', 'enablecourseajax', 'requiredblocks',
-            'rendererfactory', 'csspostprocess', 'editor_sheets', 'editor_scss', 'rarrow', 'larrow', 'uarrow', 'darrow',
+            'rendererfactory', 'csspostprocess', 'editor_sheets', 'rarrow', 'larrow', 'uarrow', 'darrow',
             'hidefromselector', 'doctype', 'yuicssmodules', 'blockrtlmanipulations',
             'lessfile', 'extralesscallback', 'lessvariablescallback', 'blockrendermethod',
             'scss', 'extrascsscallback', 'prescsscallback', 'csstreepostprocessor', 'addblockposition',
@@ -972,31 +971,6 @@ class theme_config {
         }
 
         return $files;
-    }
-
-    /**
-     * Compiles and returns the content of the SCSS to be used in editor content
-     *
-     * @return string Compiled CSS from the editor SCSS
-     */
-    public function editor_scss_to_css() {
-        $css = '';
-
-        if (!empty($this->editor_scss)) {
-            $compiler = new core_scss();
-
-            foreach ($this->editor_scss as $filename) {
-                $compiler->set_file("{$this->dir}/scss/{$filename}.scss");
-
-                try {
-                    $css .= $compiler->to_css();
-                } catch (\Exception $e) {
-                    debugging('Error while compiling editor SCSS: ' . $e->getMessage(), DEBUG_DEVELOPER);
-                }
-            }
-        }
-
-        return $css;
     }
 
     /**
@@ -1296,22 +1270,13 @@ class theme_config {
      * @return string CSS markup
      */
     public function get_css_content_editor() {
-        $css = '';
+        // Do not bother to optimise anything here, just very basic stuff.
         $cssfiles = $this->editor_css_files();
-
-        // If editor has static CSS, include it.
+        $css = '';
         foreach ($cssfiles as $file) {
             $css .= file_get_contents($file)."\n";
         }
-
-        // If editor has SCSS, compile and include it.
-        if (($convertedscss = $this->editor_scss_to_css())) {
-            $css .= $convertedscss;
-        }
-
-        $output = $this->post_process($css);
-
-        return $output;
+        return $this->post_process($css);
     }
 
     /**

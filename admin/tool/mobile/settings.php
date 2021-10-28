@@ -63,7 +63,7 @@ if ($hassiteconfig) {
 
         $temp->add(new admin_setting_configtext('tool_mobile/forcedurlscheme',
                     new lang_string('forcedurlscheme_key', 'tool_mobile'),
-                    new lang_string('forcedurlscheme', 'tool_mobile'), '', PARAM_ALPHANUM));
+                    new lang_string('forcedurlscheme', 'tool_mobile'), '', PARAM_NOTAGS));
 
         $ADMIN->add('mobileapp', $temp);
 
@@ -72,6 +72,14 @@ if ($hassiteconfig) {
 
         $temp->add(new admin_setting_configtext('mobilecssurl', new lang_string('mobilecssurl', 'tool_mobile'),
                     new lang_string('configmobilecssurl', 'tool_mobile'), '', PARAM_URL));
+
+        // Reference to Branded Mobile App.
+        if (empty($CFG->disableserviceads_branded)) {
+            $temp->add(new admin_setting_description('moodlebrandedappreference',
+                new lang_string('moodlebrandedapp', 'admin'),
+                new lang_string('moodlebrandedappreference', 'admin')
+            ));
+        }
 
         $temp->add(new admin_setting_heading('tool_mobile/smartappbanners',
                     new lang_string('smartappbanners', 'tool_mobile'), ''));

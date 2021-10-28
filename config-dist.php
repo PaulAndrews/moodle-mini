@@ -284,16 +284,8 @@ $CFG->admin = 'admin';
 //      igbinary support to make the setting to work. Also, if you change the serializer you have to flush the database!
 //      $CFG->session_redis_serializer_use_igbinary = false; // Optional, default is PHP builtin serializer.
 //
-//   Memcache session handler (requires memcached server and memcache extension):
-//      $CFG->session_handler_class = '\core\session\memcache';
-//      $CFG->session_memcache_save_path = '127.0.0.1:11211';
-//      $CFG->session_memcache_acquire_lock_timeout = 120;
-//      ** NOTE: Memcache extension has less features than memcached and may be
-//         less reliable. Use memcached where possible or if you encounter
-//         session problems. **
-//
-// Please be aware that when selecting either Memcached or Memcache for sessions that it is advised to use a dedicated
-// memcache server. The memcache and memcached extensions do not provide isolated environments for individual uses.
+// Please be aware that when selecting Memcached for sessions that it is advised to use a dedicated
+// memcache server. The memcached extension does not provide isolated environments for individual uses.
 // Using the same server for other purposes (MUC for example) can lead to sessions being prematurely removed should
 // the other uses of the server purge the cache.
 //
@@ -379,6 +371,12 @@ $CFG->admin = 'admin';
 //   profilingincluded, profilingexcluded, profilingautofrec,
 //   profilingallowme, profilingallowall, profilinglifetime
 //       $CFG->earlyprofilingenabled = true;
+//
+// Disable database storage for profile data.
+// When using an exernal plugin to store profiling data it is often
+// desirable to not store the data in the database.
+//
+//      $CFG->disableprofilingtodatabase = true;
 //
 // Force displayed usernames
 //   A little hack to anonymise user names for all students.  If you set these
@@ -577,17 +575,6 @@ $CFG->admin = 'admin';
 //
 //      $CFG->upgradekey = 'put_some_password-like_value_here';
 //
-// Font used in exported PDF files. When generating a PDF, Moodle embeds a subset of
-// the font in the PDF file so it will be readable on the widest range of devices.
-// The default font is 'freesans' which is part of the GNU FreeFont collection.
-//
-//      $CFG->pdfexportfont = 'freesans';
-//
-// Disable login token validation for login pages. Login token validation is enabled
-// by default unless $CFG->alternateloginurl is set.
-//
-//      $CFG->disablelogintoken = true;
-//
 // Document conversion limit
 //
 // How many times the background task should attempt to convert a given attempt
@@ -595,6 +582,22 @@ $CFG->admin = 'admin';
 // mod_assign conversion task.
 //
 //      $CFG->conversionattemptlimit = 3;
+//
+// Font used in exported PDF files. When generating a PDF, Moodle embeds a subset of
+// the font in the PDF file so it will be readable on the widest range of devices.
+// The default font is 'freesans' which is part of the GNU FreeFont collection.
+//
+//      $CFG->pdfexportfont = 'freesans';
+//
+// Use the following flag to enable messagingallusers and set the default preference
+// value for existing users to allow them to be contacted by other site users.
+//
+//      $CFG->keepmessagingallusersenabled = true;
+//
+// Disable login token validation for login pages. Login token validation is enabled
+// by default unless $CFG->alternateloginurl is set.
+//
+//      $CFG->disablelogintoken = true;
 //
 //=========================================================================
 // 7. SETTINGS FOR DEVELOPMENT SERVERS - not intended for production use!!!
@@ -777,6 +780,13 @@ $CFG->admin = 'admin';
 //     ),
 // );
 //
+// You can force the browser session (not user's sessions) to restart after N seconds. This could
+// be useful if you are using a cloud-based service with time restrictions in the browser side.
+// Setting this value the browser session that Behat is using will be restarted. Set the time in
+// seconds. Is not recommended to use this setting if you don't explicitly need it.
+// Example:
+//   $CFG->behat_restart_browser_after = 7200;     // Restarts the browser session after 2 hours
+//
 // All this page's extra Moodle settings are compared against a white list of allowed settings
 // (the basic and behat_* ones) to avoid problems with production environments. This setting can be
 // used to expand the default white list with an array of extra settings.
@@ -788,12 +798,6 @@ $CFG->admin = 'admin';
 // Example:
 //   $CFG->behat_usedeprecated = true;
 //
-// If you are using a slow machine, it may help to increase the timeouts that Behat uses. The
-// following example will increase timeouts by a factor of 3 (using 30 seconds instead of 10
-// seconds, for instance).
-// Example:
-//   $CFG->behat_increasetimeout = 3;
-//
 // Including feature files from directories outside the dirroot is possible if required. The setting
 // requires that the running user has executable permissions on all parent directories in the paths.
 // Example:
@@ -804,10 +808,6 @@ $CFG->admin = 'admin';
 // * a screenshot (JavaScript is required for the screenshot functionality, so not all browsers support this option)
 // Example:
 //   $CFG->behat_faildump_path = '/my/path/to/save/failure/dumps';
-//
-// You can make behat pause upon failure to help you diagnose and debug problems with your tests.
-//
-//   $CFG->behat_pause_on_fail = true;
 //
 // You can specify db, selenium wd_host etc. for behat parallel run by setting following variable.
 // Example:

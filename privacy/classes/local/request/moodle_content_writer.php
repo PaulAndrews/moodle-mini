@@ -38,11 +38,6 @@ defined('MOODLE_INTERNAL') || die();
  */
 class moodle_content_writer implements content_writer {
     /**
-     * Maximum context name char size.
-     */
-    const MAX_CONTEXT_NAME_LENGTH = 32;
-
-    /**
      * @var string The base path on disk for this instance.
      */
     protected $path = null;
@@ -217,8 +212,7 @@ class moodle_content_writer implements content_writer {
                 [$file->get_filepath()]
             );
             $path = $this->get_path($pathitems, $file->get_filename());
-            $fullpath = $this->get_full_path($pathitems, $file->get_filename());
-            check_dir_exists(dirname($fullpath), true, true);
+            check_dir_exists(dirname($path), true, true);
             $this->files[$path] = $file;
         }
 
@@ -259,17 +253,15 @@ class moodle_content_writer implements content_writer {
     /**
      * Determine the path for the current context.
      *
-     * @return array The context path.
-     * @throws \coding_exception
+     * @return  array                       The context path.
      */
-    protected function get_context_path() : array {
+    protected function get_context_path() : Array {
         $path = [];
         $contexts = array_reverse($this->context->get_parent_contexts(true));
         foreach ($contexts as $context) {
             $name = $context->get_context_name();
-            $id = ' _.' . $context->id;
-            $path[] = shorten_text(clean_param($name, PARAM_FILE),
-                    self::MAX_CONTEXT_NAME_LENGTH, true, json_decode('"' . '\u2026' . '"')) . $id;
+            $id = '_.' . $context->id;
+            $path[] = shorten_filename(clean_param("{$name} {$id}", PARAM_FILE), MAX_FILENAME_SIZE, true);
         }
 
         return $path;
@@ -383,14 +375,11 @@ class moodle_content_writer implements content_writer {
      *
      * @param   string          $path       The path to export the data at.
      * @param   string          $data       The data to be exported.
-     * @throws  \moodle_exception           If the file cannot be written for some reason.
      */
     protected function write_data(string $path, string $data) {
         $targetpath = $this->path . DIRECTORY_SEPARATOR . $path;
         check_dir_exists(dirname($targetpath), true, true);
-        if (file_put_contents($targetpath, $data) === false) {
-            throw new \moodle_exception('cannotsavefile', 'error', '', $targetpath);
-        }
+        file_put_contents($targetpath, $data);
         $this->files[$path] = $targetpath;
     }
 
@@ -623,8 +612,8 @@ class moodle_content_writer implements content_writer {
         $targetpath = ['js', 'general.js'];
         $this->copy_data($jspath, $targetpath);
 
-        $jquery = ['lib', 'jquery', 'jquery-3.5.1.min.js'];
-        $jquerydestination = ['js', 'jquery-3.5.1.min.js'];
+        $jquery = ['lib', 'jquery', 'jquery-3.2.1.min.js'];
+        $jquerydestination = ['js', 'jquery-3.2.1.min.js'];
         $this->copy_data($jquery, $jquerydestination);
 
         $requirecurrentpath = ['lib', 'requirejs', 'require.min.js'];
@@ -716,12 +705,12 @@ class moodle_content_writer implements content_writer {
      *
      * @param  string $filepath The file path.
      * @return string contents of the file.
-     * @throws \moodle_exception If the file cannot be opened.
      */
     protected function get_file_content(string $filepath) : String {
-        $content = file_get_contents($filepath);
-        if ($content === false) {
-            throw new \moodle_exception('cannotopenfile', 'error', '', $filepath);
+        $filepointer = fopen($filepath, 'r');
+        $content = '';
+        while (!feof($filepointer)) {
+            $content .= fread($filepointer, filesize($filepath));
         }
         return $content;
     }

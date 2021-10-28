@@ -399,11 +399,10 @@ class assign_grading_table extends table_sql implements renderable {
         $columns[] = 'grade';
         $headers[] = get_string('grade');
         if ($this->is_downloading()) {
-            $gradetype = $this->assignment->get_instance()->grade;
-            if ($gradetype > 0) {
+            if ($this->assignment->get_instance()->grade >= 0) {
                 $columns[] = 'grademax';
                 $headers[] = get_string('maxgrade', 'assign');
-            } else if ($gradetype < 0) {
+            } else {
                 // This is a custom scale.
                 $columns[] = 'scale';
                 $headers[] = get_string('scale', 'assign');
@@ -414,7 +413,7 @@ class assign_grading_table extends table_sql implements renderable {
                 $columns[] = 'workflowstate';
                 $headers[] = get_string('markingworkflowstate', 'assign');
             }
-            // Add a column to show if this grade can be changed.
+            // Add a column for the list of valid marking workflow states.
             $columns[] = 'gradecanbechanged';
             $headers[] = get_string('gradecanbechanged', 'assign');
         }
@@ -908,12 +907,8 @@ class assign_grading_table extends table_sql implements renderable {
      * @return string
      */
     public function col_grademax(stdClass $row) {
-        if ($this->assignment->get_instance()->grade > 0) {
-            $gradeitem = $this->assignment->get_grade_item();
-            return format_float($this->assignment->get_instance()->grade, $gradeitem->get_decimals());
-        } else {
-            return '';
-        }
+        $gradeitem = $this->assignment->get_grade_item();
+        return format_float($this->assignment->get_instance()->grade, $gradeitem->get_decimals());
     }
 
     /**
@@ -1077,7 +1072,11 @@ class assign_grading_table extends table_sql implements renderable {
             // Add status of "grading" if markflow is not enabled.
             if (!$instance->markingworkflow) {
                 if ($row->grade !== null && $row->grade >= 0) {
-                    $o .= $this->output->container(get_string('graded', 'assign'), 'submissiongraded');
+                    if ($row->timemarked < $row->timesubmitted) {
+                        $o .= $this->output->container(get_string('gradedfollowupsubmit', 'assign'), 'gradingreminder');
+                    } else {
+                        $o .= $this->output->container(get_string('graded', 'assign'), 'submissiongraded');
+                    }
                 } else if (!$timesubmitted || $status == ASSIGN_SUBMISSION_STATUS_NEW) {
                     $now = time();
                     if ($due && ($now > $due)) {
@@ -1401,7 +1400,7 @@ class assign_grading_table extends table_sql implements renderable {
     public function other_cols($colname, $row) {
         // For extra user fields the result is already in $row.
         if (empty($this->plugincache[$colname])) {
-            return parent::other_cols($colname, $row);
+            return $row->$colname;
         }
 
         // This must be a plugin field.

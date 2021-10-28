@@ -29,18 +29,20 @@ Feature: Backup and restore of quizzes
     When I am on "Course 1" course homepage with editing mode on
     And I duplicate "Quiz 1" activity editing the new copy with:
       | Name | Quiz 2 |
-    And I am on the "Quiz 1" "mod_quiz > Edit" page
+    And I follow "Quiz 2"
+    And I navigate to "Edit quiz" in current page administration
     Then I should see "TF1"
     And I should see "TF2"
 
   @javascript @_file_upload
   Scenario: Restore a Moodle 2.8 quiz backup
     When I am on "Course 1" course homepage
-    And I navigate to "Restore" node in "Course administration"
+    And I navigate to "Restore" in current page administration
     And I press "Manage backup files"
     And I upload "mod/quiz/tests/fixtures/moodle_28_quiz.mbz" file to "Files" filemanager
     And I press "Save changes"
     And I restore "moodle_28_quiz.mbz" backup into "Course 1" course using this options:
-    And I am on the "Restored Moodle 2.8 quiz" "mod_quiz > Edit" page
+    And I follow "Restored Moodle 2.8 quiz"
+    And I navigate to "Edit quiz" in current page administration
     Then I should see "TF1"
     And I should see "TF2"

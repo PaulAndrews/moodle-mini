@@ -33,9 +33,6 @@
  */
 class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSelector {
 
-    // Use the named selector trait.
-    use behat_named_selector;
-
     /**
      * Creates selector instance.
      */
@@ -77,7 +74,6 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'table_row' => 'table_row',
         'xpath_element' => 'xpath_element',
         'form_row' => 'form_row',
-        'autocomplete' => 'autocomplete',
     );
 
     /**
@@ -115,7 +111,6 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'form_row' => 'form_row',
         'autocomplete_selection' => 'autocomplete_selection',
         'autocomplete_suggestions' => 'autocomplete_suggestions',
-        'autocomplete' => 'autocomplete',
     );
 
     /**
@@ -128,7 +123,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
      */
     protected static $moodleselectors = array(
         'activity' => <<<XPATH
-.//li[contains(concat(' ', normalize-space(@class), ' '), ' activity ')][descendant::*[contains(normalize-space(.), %locator%)]]
+.//li[contains(concat(' ', normalize-space(@class), ' '), ' activity ')][normalize-space(.) = %locator% ]
 XPATH
         , 'block' => <<<XPATH
 .//*[@data-block][contains(concat(' ', normalize-space(@class), ' '), concat(' ', %locator%, ' ')) or
@@ -154,7 +149,7 @@ XPATH
 .//div[
         contains(concat(' ', normalize-space(@class), ' '), ' modal ')
             and
-        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')]) = %locator%
+        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')] = %locator%)
     ]
 XPATH
         , 'icon' => <<<XPATH
@@ -190,22 +185,19 @@ XPATH
 .//*[self::label or self::div[contains(concat(' ', @class, ' '), ' fstaticlabel ')]][contains(., %locator%)]/ancestor::*[contains(concat(' ', @class, ' '), ' fitem ')]
 XPATH
         , 'message_area_region' => <<<XPATH
-.//div[@data-region='messaging-area']/descendant::*[@data-region = %locator%]
+.//div[@data-region='message-drawer']/descendant::*[@data-region = %locator%]
 XPATH
         , 'message_area_region_content' => <<<XPATH
-.//div[@data-region='messaging-area']/descendant::*[@data-region-content = %locator%]
+.//div[@data-region='message-drawer']/descendant::*[@data-region-content = %locator%]
 XPATH
         , 'message_area_action' => <<<XPATH
-.//div[@data-region='messaging-area']/descendant::*[@data-action = %locator%]
+.//div[@data-region='message-drawer']/descendant::*[@data-action = %locator%]
 XPATH
         , 'autocomplete_selection' => <<<XPATH
 .//div[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-selection', ' '))]/span[@role='listitem'][contains(normalize-space(.), %locator%)]
 XPATH
         , 'autocomplete_suggestions' => <<<XPATH
 .//ul[contains(concat(' ', normalize-space(@class), ' '), concat(' ', 'form-autocomplete-suggestions', ' '))]/li[@role='option'][contains(normalize-space(.), %locator%)]
-XPATH
-        , 'autocomplete' => <<<XPATH
-.//descendant::input[@id = //label[contains(normalize-space(string(.)), %locator%)]/@for]/ancestor::*[@data-fieldtype = 'autocomplete']
 XPATH
     );
 
@@ -232,11 +224,6 @@ XPATH
 .//*[@data-passwordunmask='wrapper']
     /descendant::input[@id = %locator% or @id = //label[contains(normalize-space(string(.)), %locator%)]/@for]
 XPATH
-        ,
-             'inplaceeditable' => <<<XPATH
-.//descendant::span[@data-inplaceeditable][descendant::a[%titleMatch%]]
-XPATH
-        ,
         ],
     ];
 
@@ -254,10 +241,6 @@ XPATH
         '%ariaLabelMatch%' => [
             'moodle' => 'contains(./@aria-label, %locator%)',
         ],
-    ];
-
-    /** @var List of deprecated selectors */
-    protected static $deprecatedselectors = [
     ];
 
     /**

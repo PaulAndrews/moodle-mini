@@ -598,10 +598,10 @@ class auth_plugin_ldap extends auth_plugin_base {
             if ($user->auth != $this->authtype) {
                 return AUTH_CONFIRM_ERROR;
 
-            } else if ($user->secret === $confirmsecret && $user->confirmed) {
+            } else if ($user->secret == $confirmsecret && $user->confirmed) {
                 return AUTH_CONFIRM_ALREADY;
 
-            } else if ($user->secret === $confirmsecret) {   // They have provided the secret key to get in
+            } else if ($user->secret == $confirmsecret) {   // They have provided the secret key to get in
                 if (!$this->user_activate($username)) {
                     return AUTH_CONFIRM_FAIL;
                 }
@@ -698,8 +698,8 @@ class auth_plugin_ldap extends auth_plugin_base {
             array_push($contexts, $this->config->create_context);
         }
 
-        $ldappagedresults = ldap_paged_results_supported($this->config->ldap_version, $ldapconnection);
-        $ldapcookie = '';
+        $ldap_pagedresults = ldap_paged_results_supported($this->config->ldap_version, $ldapconnection);
+        $ldap_cookie = '';
         foreach ($contexts as $context) {
             $context = trim($context);
             if (empty($context)) {
@@ -707,28 +707,23 @@ class auth_plugin_ldap extends auth_plugin_base {
             }
 
             do {
-                if ($ldappagedresults) {
-                    ldap_control_paged_result($ldapconnection, $this->config->pagesize, true, $ldapcookie);
+                if ($ldap_pagedresults) {
+                    ldap_control_paged_result($ldapconnection, $this->config->pagesize, true, $ldap_cookie);
                 }
                 if ($this->config->search_sub) {
                     // Use ldap_search to find first user from subtree.
-                    $ldapresult = ldap_search($ldapconnection, $context, $filter, array($this->config->user_attribute));
+                    $ldap_result = ldap_search($ldapconnection, $context, $filter, array($this->config->user_attribute));
                 } else {
                     // Search only in this context.
-                    $ldapresult = ldap_list($ldapconnection, $context, $filter, array($this->config->user_attribute));
+                    $ldap_result = ldap_list($ldapconnection, $context, $filter, array($this->config->user_attribute));
                 }
-                if (!$ldapresult) {
+                if(!$ldap_result) {
                     continue;
                 }
-                if ($ldappagedresults) {
-                    $pagedresp = ldap_control_paged_result_response($ldapconnection, $ldapresult, $ldapcookie);
-                    // Function ldap_control_paged_result_response() does not overwrite $ldapcookie if it fails, by
-                    // setting this to null we avoid an infinite loop.
-                    if ($pagedresp === false) {
-                        $ldapcookie = null;
-                    }
+                if ($ldap_pagedresults) {
+                    ldap_control_paged_result_response($ldapconnection, $ldap_result, $ldap_cookie);
                 }
-                if ($entry = @ldap_first_entry($ldapconnection, $ldapresult)) {
+                if ($entry = @ldap_first_entry($ldapconnection, $ldap_result)) {
                     do {
                         $value = ldap_get_values_len($ldapconnection, $entry, $this->config->user_attribute);
                         $value = core_text::convert($value[0], $this->config->ldapencoding, 'utf-8');
@@ -736,13 +731,13 @@ class auth_plugin_ldap extends auth_plugin_base {
                         $this->ldap_bulk_insert($value);
                     } while ($entry = ldap_next_entry($ldapconnection, $entry));
                 }
-                unset($ldapresult); // Free mem.
-            } while ($ldappagedresults && $ldapcookie !== null && $ldapcookie != '');
+                unset($ldap_result); // Free mem.
+            } while ($ldap_pagedresults && $ldap_cookie !== null && $ldap_cookie != '');
         }
 
         // If LDAP paged results were used, the current connection must be completely
         // closed and a new one created, to work without paged results from here on.
-        if ($ldappagedresults) {
+        if ($ldap_pagedresults) {
             $this->ldap_close(true);
             $ldapconnection = $this->ldap_connect();
         }
@@ -753,9 +748,7 @@ class auth_plugin_ldap extends auth_plugin_base {
         $count = $DB->count_records_sql('SELECT COUNT(username) AS count, 1 FROM {tmp_extuser}');
         if ($count < 1) {
             print_string('didntgetusersfromldap', 'auth_ldap');
-            $dbman->drop_table($table);
-            $this->ldap_close();
-            return false;
+            exit;
         } else {
             print_string('gotcountrecordsfromldap', 'auth_ldap', $count);
         }

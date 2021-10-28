@@ -326,7 +326,7 @@ class gradebookservices extends service_base {
         require_once($CFG->libdir . '/gradelib.php');
         $finalgrade = null;
         $timemodified = null;
-        if (isset($score->scoreGiven)) {
+        if (isset($score->scoreGiven) && $score->scoreGiven) {
             $finalgrade = grade_floatval($score->scoreGiven);
             $max = 1;
             if (isset($score->scoreMaximum)) {
@@ -546,7 +546,9 @@ class gradebookservices extends service_base {
         $sql = "DELETE
                   FROM {ltiservice_gradebookservices}
                  WHERE gradeitemid NOT IN (SELECT id
-                                             FROM {grade_items} gi)";
+                                             FROM {grade_items} gi
+                                            WHERE gi.itemtype = 'mod'
+                                              AND gi.itemmodule = 'lti')";
         $DB->execute($sql);
     }
 

@@ -1053,6 +1053,79 @@ EOF;
     }
 
     /**
+     * Test file_rewrite_pluginfile_urls with includetoken.
+     */
+    public function test_file_rewrite_pluginfile_urls_includetoken() {
+        global $USER, $CFG;
+
+        $CFG->slasharguments = true;
+
+        $this->resetAfterTest();
+
+        $syscontext = context_system::instance();
+        $originaltext = 'Fake test with an image <img src="@@PLUGINFILE@@/image.png">';
+        $options = ['includetoken' => true];
+
+        // Rewrite the content. This will generate a new token.
+        $finaltext = file_rewrite_pluginfile_urls(
+                $originaltext, 'pluginfile.php', $syscontext->id, 'user', 'private', 0, $options);
+
+        $token = get_user_key('core_files', $USER->id);
+        $expectedurl = new \moodle_url("/tokenpluginfile.php/{$token}/{$syscontext->id}/user/private/0/image.png");
+        $expectedtext = "Fake test with an image <img src=\"{$expectedurl}\">";
+        $this->assertEquals($expectedtext, $finaltext);
+
+        // Do it again - the second time will use an existing token.
+        $finaltext = file_rewrite_pluginfile_urls(
+                $originaltext, 'pluginfile.php', $syscontext->id, 'user', 'private', 0, $options);
+        $this->assertEquals($expectedtext, $finaltext);
+
+        // Now undo.
+        $options['reverse'] = true;
+        $finaltext = file_rewrite_pluginfile_urls($finaltext, 'pluginfile.php', $syscontext->id, 'user', 'private', 0, $options);
+
+        // Compare the final text is the same that the original.
+        $this->assertEquals($originaltext, $finaltext);
+    }
+
+    /**
+     * Test file_rewrite_pluginfile_urls with includetoken with slasharguments disabled..
+     */
+    public function test_file_rewrite_pluginfile_urls_includetoken_no_slashargs() {
+        global $USER, $CFG;
+
+        $CFG->slasharguments = false;
+
+        $this->resetAfterTest();
+
+        $syscontext = context_system::instance();
+        $originaltext = 'Fake test with an image <img src="@@PLUGINFILE@@/image.png">';
+        $options = ['includetoken' => true];
+
+        // Rewrite the content. This will generate a new token.
+        $finaltext = file_rewrite_pluginfile_urls(
+                $originaltext, 'pluginfile.php', $syscontext->id, 'user', 'private', 0, $options);
+
+        $token = get_user_key('core_files', $USER->id);
+        $expectedurl = new \moodle_url("/tokenpluginfile.php");
+        $expectedurl .= "?token={$token}&file=/{$syscontext->id}/user/private/0/image.png";
+        $expectedtext = "Fake test with an image <img src=\"{$expectedurl}\">";
+        $this->assertEquals($expectedtext, $finaltext);
+
+        // Do it again - the second time will use an existing token.
+        $finaltext = file_rewrite_pluginfile_urls(
+                $originaltext, 'pluginfile.php', $syscontext->id, 'user', 'private', 0, $options);
+        $this->assertEquals($expectedtext, $finaltext);
+
+        // Now undo.
+        $options['reverse'] = true;
+        $finaltext = file_rewrite_pluginfile_urls($finaltext, 'pluginfile.php', $syscontext->id, 'user', 'private', 0, $options);
+
+        // Compare the final text is the same that the original.
+        $this->assertEquals($originaltext, $finaltext);
+    }
+
+    /**
      * Helpter function to create draft files
      *
      * @param  array  $filedata data for the file record (to not use defaults)
@@ -1474,63 +1547,41 @@ EOF;
         $this->assertEquals($fifthrecord['filename'], $allfiles[4]->filename);
     }
 
-    /**
-     * Test file_is_draft_areas_limit_reached
-     */
-    public function test_file_is_draft_areas_limit_reached() {
-        global $CFG;
+    public function test_file_copy_file_to_file_area() {
+        // Create two files in different draft areas but owned by the same user.
+        global $USER;
         $this->resetAfterTest(true);
+        $this->setAdminUser();
 
-        $capacity = $CFG->draft_area_bucket_capacity = 5;
-        $leak = $CFG->draft_area_bucket_leak = 0.2; // Leaks every 5 seconds.
+        $filerecord = ['filename'  => 'file1.png', 'itemid' => file_get_unused_draft_itemid()];
+        $file1 = self::create_draft_file($filerecord);
+        $filerecord = ['filename'  => 'file2.png', 'itemid' => file_get_unused_draft_itemid()];
+        $file2 = self::create_draft_file($filerecord);
 
-        $generator = $this->getDataGenerator();
-        $user = $generator->create_user();
+        // Confirm one file in each draft area.
+        $fs = get_file_storage();
+        $usercontext = context_user::instance($USER->id);
+        $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $file1->get_itemid(), 'itemid', 0);
+        $this->assertCount(1, $draftfiles);
+        $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $file2->get_itemid(), 'itemid', 0);
+        $this->assertCount(1, $draftfiles);
 
-        $this->setUser($user);
+        // Create file record.
+        $filerecord = [
+            'component' => $file2->get_component(),
+            'filearea' => $file2->get_filearea(),
+            'itemid' => $file2->get_itemid(),
+            'contextid' => $file2->get_contextid(),
+            'filepath' => '/',
+            'filename' => $file2->get_filename()
+        ];
 
-        $itemids = [];
-        for ($i = 0; $i < $capacity; $i++) {
-            $itemids[$i] = file_get_unused_draft_itemid();
-        }
-
-        // This test highly depends on time. We try to make sure that the test starts at the early moments on the second.
-        // This was not needed if MDL-37327 was implemented.
-        $after = time();
-        while (time() === $after) {
-            usleep(100000);
-        }
-
-        // Burst up to the capacity and make sure that the bucket allows it.
-        for ($i = 0; $i < $capacity; $i++) {
-            if ($i) {
-                sleep(1); // A little delay so we have different timemodified value for files.
-            }
-            $this->assertFalse(file_is_draft_areas_limit_reached($user->id));
-            self::create_draft_file([
-                'filename' => 'file1.png',
-                'itemid' => $itemids[$i],
-            ]);
-        }
-
-        // The bucket should be full after bursting.
-        $this->assertTrue(file_is_draft_areas_limit_reached($user->id));
-
-        // The bucket leaks so it shouldn't be full after a certain time.
-        // Reiterating that this test could have been faster if MDL-37327 was implemented.
-        sleep(ceil(1 / $leak) - ($capacity - 1));
-        $this->assertFalse(file_is_draft_areas_limit_reached($user->id));
-
-        // Only one item was leaked from the bucket. So the bucket should become full again if we add a single item to it.
-        self::create_draft_file([
-            'filename' => 'file2.png',
-            'itemid' => $itemids[0],
-        ]);
-        $this->assertTrue(file_is_draft_areas_limit_reached($user->id));
-
-        // The bucket leaks at a constant rate. It doesn't matter if it is filled as the result of bursting or not.
-        sleep(ceil(1 / $leak));
-        $this->assertFalse(file_is_draft_areas_limit_reached($user->id));
+        // Copy file2 into file1's draft area.
+        file_copy_file_to_file_area($filerecord, $file2->get_filename(), $file1->get_itemid());
+        $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $file1->get_itemid(), 'itemid', 0);
+        $this->assertCount(2, $draftfiles);
+        $draftfiles = $fs->get_area_files($usercontext->id, 'user', 'draft', $file2->get_itemid(), 'itemid', 0);
+        $this->assertCount(1, $draftfiles);
     }
 }
 

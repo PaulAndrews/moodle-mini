@@ -519,11 +519,6 @@ class block_manager {
             }
         }
         $this->regions[$region] = 1;
-
-        // Checking the actual property instead of calling get_default_region as it ends up in a recursive call.
-        if (empty($this->defaultregion)) {
-            $this->set_default_region($region);
-        }
     }
 
     /**
@@ -1260,12 +1255,6 @@ class block_manager {
      */
     public function ensure_content_created($region, $output) {
         $this->ensure_instances_exist($region);
-
-        if (!has_capability('moodle/block:view', $this->page->context) ) {
-            $this->visibleblockcontent[$region] = [];
-            return;
-        }
-
         if (!array_key_exists($region, $this->visibleblockcontent)) {
             $contents = array();
             if (array_key_exists($region, $this->extracontent)) {
@@ -1387,6 +1376,30 @@ class block_manager {
                 $str,
                 array('class' => 'editing_delete')
             );
+        }
+
+        if (!empty($CFG->contextlocking) && has_capability('moodle/site:managecontextlocks', $block->context)) {
+            $parentcontext = $block->context->get_parent_context();
+            if (empty($parentcontext) || empty($parentcontext->locked)) {
+                if ($block->context->locked) {
+                    $lockicon = 'i/unlock';
+                    $lockstring = get_string('managecontextunlock', 'admin');
+                } else {
+                    $lockicon = 'i/lock';
+                    $lockstring = get_string('managecontextlock', 'admin');
+                }
+                $controls[] = new action_menu_link_secondary(
+                    new moodle_url(
+                        '/admin/lock.php',
+                        [
+                            'id' => $block->context->id,
+                        ]
+                    ),
+                    new pix_icon($lockicon, $lockstring, 'moodle', array('class' => 'iconsmall', 'title' => '')),
+                    $lockstring,
+                    ['class' => 'editing_lock']
+                );
+            }
         }
 
         return $controls;
@@ -2594,7 +2607,7 @@ function blocks_add_default_system_blocks() {
         $subpagepattern = null;
     }
 
-    $newblocks = array('private_files', 'online_users', 'badges', 'calendar_month', 'calendar_upcoming');
-    $newcontent = array('lp', 'myoverview');
+    $newblocks = array('timeline', 'private_files', 'online_users', 'badges', 'calendar_month', 'calendar_upcoming');
+    $newcontent = array('lp', 'recentlyaccessedcourses', 'myoverview');
     $page->blocks->add_blocks(array(BLOCK_POS_RIGHT => $newblocks, 'content' => $newcontent), 'my-index', $subpagepattern);
 }
