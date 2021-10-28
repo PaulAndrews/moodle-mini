@@ -78,6 +78,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'group_message_header' => 'group_message_header',
         'group_message' => 'group_message',
         'autocomplete' => 'autocomplete',
+        'iframe' => 'iframe',
     );
 
     /**
@@ -121,6 +122,7 @@ class behat_partial_named_selector extends \Behat\Mink\Selector\PartialNamedSele
         'autocomplete_selection' => 'autocomplete_selection',
         'autocomplete_suggestions' => 'autocomplete_suggestions',
         'autocomplete' => 'autocomplete',
+        'iframe' => 'iframe',
     );
 
     /**
@@ -159,7 +161,7 @@ XPATH
 .//div[
         contains(concat(' ', normalize-space(@class), ' '), ' modal ')
             and
-        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')]) = %locator%
+        normalize-space(descendant::*[contains(concat(' ', normalize-space(@class), ' '), ' modal-header ')] = %locator%)
     ]
 XPATH
         , 'group_message' => <<<XPATH
@@ -229,6 +231,9 @@ XPATH
 XPATH
         , 'autocomplete' => <<<XPATH
 .//descendant::input[@id = //label[contains(normalize-space(string(.)), %locator%)]/@for]/ancestor::*[@data-fieldtype = 'autocomplete']
+XPATH
+        , 'iframe' => <<<XPATH
+.//iframe[contains(concat(' ', normalize-space(@class), ' '), %locator% )]
 XPATH
     );
 

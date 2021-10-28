@@ -47,8 +47,7 @@ define(['jquery', './tether', 'core/event', 'core/custom_interaction_events'], f
         // We do twice because: https://github.com/twbs/bootstrap/issues/10547
         jQuery('body').popover({
             trigger: 'focus',
-            selector: "[data-toggle=popover][data-trigger!=hover]",
-            placement: 'auto'
+            selector: "[data-toggle=popover][data-trigger!=hover]"
         });
 
         // Popovers must close on Escape for accessibility reasons.
@@ -56,8 +55,7 @@ define(['jquery', './tether', 'core/event', 'core/custom_interaction_events'], f
             customEvents.events.escape,
         ]);
         jQuery('body').on(customEvents.events.escape, '[data-toggle=popover]', function() {
-            // Use "blur" instead of "popover('hide')" to prevent issue that the same tooltip can't be opened again.
-            jQuery(this).trigger('blur');
+            jQuery(this).popover('hide');
         });
 
         jQuery("html").popover({
@@ -68,6 +66,28 @@ define(['jquery', './tether', 'core/event', 'core/custom_interaction_events'], f
                 hide: 500
             }
         });
+
+        jQuery("html").tooltip({
+            container: "body",
+            selector: '[data-toggle="tooltip"]'
+        });
+
+        // Disables flipping the dropdowns up and getting hidden behind the navbar.
+        jQuery.fn.dropdown.Constructor.Default.flip = false;
+
+        jQuery('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+            var hash = jQuery(e.target).attr('href');
+            if (history.replaceState) {
+                history.replaceState(null, null, hash);
+            } else {
+                location.hash = hash;
+            }
+        });
+
+        var hash = window.location.hash;
+        if (hash) {
+           jQuery('.nav-link[href="' + hash + '"]').tab('show');
+        }
 
         // We need to call popover automatically if nodes are added to the page later.
         Event.getLegacyEvents().done(function(events) {

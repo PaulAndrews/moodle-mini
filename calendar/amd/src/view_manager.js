@@ -32,7 +32,7 @@ define([
     'core/modal_factory',
     'core/modal_events',
     'core_calendar/summary_modal',
-    'core/pending',
+    'core/custom_interaction_events',
 ], function(
     $,
     Templates,
@@ -44,7 +44,7 @@ define([
     ModalFactory,
     ModalEvents,
     SummaryModal,
-    Pending
+    CustomEvents
 ) {
 
         /**
@@ -57,7 +57,6 @@ define([
 
             // Bind click events to event links.
             root.on('click', CalendarSelectors.links.eventLink, function(e) {
-                var pendingPromise = new Pending('core_calendar/view_manager:eventLink:click');
                 var target = $(e.target);
                 var eventId = null;
 
@@ -82,11 +81,7 @@ define([
                     // and causing the day click handler to fire.
                     e.stopPropagation();
 
-                    renderEventSummaryModal(eventId)
-                    .then(pendingPromise.resolve())
-                    .catch();
-                } else {
-                    pendingPromise.resolve();
+                    renderEventSummaryModal(eventId);
                 }
             });
 
@@ -108,6 +103,44 @@ define([
                 }
 
             });
+
+            var viewSelector = root.find(CalendarSelectors.viewSelector);
+            CustomEvents.define(viewSelector, [CustomEvents.events.activate]);
+            viewSelector.on(
+                CustomEvents.events.activate,
+                function(e) {
+                    e.preventDefault();
+
+                    var option = $(e.target);
+                    if (option.hasClass('active')) {
+                        return;
+                    }
+
+                    var view = option.data('view'),
+                        year = option.data('year'),
+                        month = option.data('month'),
+                        day = option.data('day'),
+                        courseId = option.data('courseid'),
+                        categoryId = option.data('categoryid');
+
+                    if (view == 'month') {
+                        refreshMonthContent(root, year, month, courseId, categoryId, root, 'core_calendar/calendar_month')
+                            .then(function() {
+                                return window.history.pushState({}, '', '?view=month');
+                            }).fail(Notification.exception);
+                    } else if (view == 'day') {
+                        refreshDayContent(root, year, month, day, courseId, categoryId, root, 'core_calendar/calendar_day')
+                            .then(function() {
+                                return window.history.pushState({}, '', '?view=day');
+                            }).fail(Notification.exception);
+                    } else if (view == 'upcoming') {
+                        reloadCurrentUpcoming(root, courseId, categoryId, root, 'core_calendar/calendar_upcoming')
+                            .then(function() {
+                                return window.history.pushState({}, '', '?view=upcoming');
+                            }).fail(Notification.exception);
+                    }
+                }
+            );
         };
 
         /**
@@ -119,19 +152,21 @@ define([
          * @param {Number} courseid The id of the course whose events are shown
          * @param {Number} categoryid The id of the category whose events are shown
          * @param {object} target The element being replaced. If not specified, the calendarwrapper is used.
+         * @param {String} template The template to be rendered.
          * @return {promise}
          */
-        var refreshMonthContent = function(root, year, month, courseid, categoryid, target) {
+        var refreshMonthContent = function(root, year, month, courseid, categoryid, target, template) {
             startLoading(root);
 
             target = target || root.find(CalendarSelectors.wrapper);
-
+            template = template || root.attr('data-template');
             M.util.js_pending([root.get('id'), year, month, courseid].join('-'));
             var includenavigation = root.data('includenavigation');
             var mini = root.data('mini');
             return CalendarRepository.getCalendarMonthData(year, month, courseid, categoryid, includenavigation, mini)
                 .then(function(context) {
-                    return Templates.render(root.attr('data-template'), context);
+                    context.viewingmonth = true;
+                    return Templates.render(template, context);
                 })
                 .then(function(html, js) {
                     return Templates.replaceNode(target, html, js);
@@ -206,18 +241,21 @@ define([
          * @param {Number} courseid The id of the course whose events are shown
          * @param {Number} categoryId The id of the category whose events are shown
          * @param {object} target The element being replaced. If not specified, the calendarwrapper is used.
+         * @param {String} template The template to be rendered.
+         *
          * @return {promise}
          */
-        var refreshDayContent = function(root, year, month, day, courseid, categoryId, target) {
+        var refreshDayContent = function(root, year, month, day, courseid, categoryId, target, template) {
             startLoading(root);
 
             target = target || root.find(CalendarSelectors.wrapper);
-
+            template = template || root.attr('data-template');
             M.util.js_pending([root.get('id'), year, month, day, courseid, categoryId].join('-'));
             var includenavigation = root.data('includenavigation');
             return CalendarRepository.getCalendarDayData(year, month, day, courseid, categoryId, includenavigation)
                 .then(function(context) {
-                    return Templates.render(root.attr('data-template'), context);
+                    context.viewingday = true;
+                    return Templates.render(template, context);
                 })
                 .then(function(html, js) {
                     return Templates.replaceNode(target, html, js);
@@ -279,7 +317,7 @@ define([
                     return arguments;
                 })
                 .then(function() {
-                    $('body').trigger(CalendarEvents.dayChanged, [year, month, day, courseId, categoryId]);
+                    $('body').trigger(CalendarEvents.dayChanged, [year, month, courseId, categoryId]);
                     return arguments;
                 });
         };
@@ -314,12 +352,15 @@ define([
          * @param {object} root The container element.
          * @param {Number} courseId The course id.
          * @param {Number} categoryId The id of the category whose events are shown
+         * @param {String} template The template to be rendered.
+         * @param {object} target The element being replaced. If not specified, the calendarwrapper is used.
          * @return {promise}
          */
-        var reloadCurrentUpcoming = function(root, courseId, categoryId) {
+        var reloadCurrentUpcoming = function(root, courseId, categoryId, target, template) {
             startLoading(root);
 
-            var target = root.find(CalendarSelectors.wrapper);
+            target = target || root.find(CalendarSelectors.wrapper);
+            template = template || root.attr('data-template');
 
             if (typeof courseId === 'undefined') {
                 courseId = root.find(CalendarSelectors.wrapper).data('courseid');
@@ -331,7 +372,8 @@ define([
 
             return CalendarRepository.getCalendarUpcomingData(courseId, categoryId)
                 .then(function(context) {
-                    return Templates.render(root.attr('data-template'), context);
+                    context.viewingupcoming = true;
+                    return Templates.render(template, context);
                 })
                 .then(function(html, js) {
                     return Templates.replaceNode(target, html, js);
@@ -360,14 +402,12 @@ define([
          * Render the event summary modal.
          *
          * @param {Number} eventId The calendar event id.
-         * @returns {Promise}
          */
         var renderEventSummaryModal = function(eventId) {
-            var pendingPromise = new Pending('core_calendar/view_manager:renderEventSummaryModal');
             var typeClass = '';
 
             // Calendar repository promise.
-            return CalendarRepository.getEventById(eventId).then(function(getEventResponse) {
+            CalendarRepository.getEventById(eventId).then(function(getEventResponse) {
                 if (!getEventResponse.event) {
                     throw new Error('Error encountered while trying to fetch calendar event with ID: ' + eventId);
                 }
@@ -393,8 +433,7 @@ define([
                 // Create the modal.
                 return ModalFactory.create(modalParams);
 
-            })
-            .then(function(modal) {
+            }).done(function(modal) {
                 // Handle hidden event.
                 modal.getRoot().on(ModalEvents.hidden, function() {
                     // Destroy when hidden.
@@ -404,19 +443,12 @@ define([
                 // Finally, render the modal!
                 modal.show();
 
-                return modal;
-            })
-            .then(function(modal) {
-                pendingPromise.resolve();
-
-                return modal;
-            })
-            .catch(Notification.exception);
+            }).fail(Notification.exception);
         };
 
         return {
-            init: function(root) {
-                registerEventListeners(root);
+            init: function(root, view) {
+                registerEventListeners(root, view);
             },
             reloadCurrentMonth: reloadCurrentMonth,
             changeMonth: changeMonth,

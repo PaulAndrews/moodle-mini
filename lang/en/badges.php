@@ -81,8 +81,6 @@ $string['awardedtoyou'] = 'Issued to me';
 $string['awardoncron'] = 'Access to the badges was successfully enabled. Too many users can instantly earn this badge. To ensure site performance, this action will take some time to process.';
 $string['awards'] = 'Recipients';
 $string['backpackavailability'] = 'External badge verification';
-$string['backpackconnectionok'] = 'Backpack connection successfully established';
-$string['backpackconnectionnottested'] = 'Connection can not be tested for this backpack because only OBv2.0 backpacks support it.';
 $string['backpackneedsupdate'] = 'The backpack connected to this profile does not match the backpack for the site. You need to disconnect and reconnect the backpack.';
 $string['backpackavailability_help'] = 'For badge recipients to be able to prove they earned their badges from you, an external backpack service should be able to access your site and verify badges issued from it. Your site does not currently appear to be accessible, which means that badges you have already issued or will issue in the future cannot be verified.
 
@@ -248,7 +246,7 @@ $string['criteria_5_help'] = 'Allows a badge to be awarded to users who have com
 $string['criteria_6'] = 'Profile completion';
 $string['criteria_6_help'] = 'Allows a badge to be awarded to users for completing certain fields in their profile. You can select from default and custom profile fields that are available to users. ';
 $string['criteria_7'] = 'Awarded badges';
-$string['criteria_7_help'] = 'Allows a badge to be awarded to users based on other badges they have earned.';
+$string['criteria_7_help'] = 'Allows a badge to be awarded to users based on the other badges thay have earned.';
 $string['criteria_8'] = 'Cohort membership';
 $string['criteria_8_help'] = 'Allows a badge to be awarded to users based on cohort membership.';
 $string['criteria_9'] = 'Competencies';
@@ -538,8 +536,6 @@ $string['targetframework'] = 'Framework';
 $string['targetframework_help'] = 'The name of the external skill or standard framework.';
 $string['targetcode'] = 'Code';
 $string['targetcode_help'] = 'A unique string identifier for referencing the external skill or standard within its framework.';
-$string['testbackpack'] = 'Test backpack \'{$a}\'';
-$string['testsettings'] = 'Test settings';
 $string['type'] = 'Type';
 $string['variablesubstitution'] = 'Variable substitution in messages.';
 $string['variablesubstitution_help'] = 'In a badge message, certain variables can be inserted into the subject and/or body of a message so that they will be replaced with real values when the message is sent. The variables should be inserted into the text exactly as they are shown below. The following variables can be used:
@@ -558,17 +554,6 @@ $string['version'] = 'Version';
 $string['version_help'] = 'The version field may be used to keep track of the badge\'s development. If specified, the version is displayed on the badge page.';
 $string['warnexpired'] = ' (This badge has expired!)';
 $string['year'] = 'Year(s)';
-
-// Deprecated since Moodle 3.3.
-$string['personaconnection'] = 'Sign in with your email';
-$string['personaconnection_help'] = 'Persona is a system for identifying yourself across the web, using an email address that you own. The Open Badges backpack uses Persona as a login system, so to be able to connect to a backpack you will need a Persona account.
-
-For more information about Persona visit <a href="https://login.persona.org/about">https://login.persona.org/about</a>.';
-$string['error:backpackloginfailed'] = 'You could not be connected to an external backpack for the following reason: {$a}';
-$string['error:badjson'] = 'The connection attempt returned invalid data.';
-$string['error:noassertion'] = 'No assertion was returned by Persona. You may have closed the dialog before completing the login process.';
-$string['error:personaneedsjs'] = 'Currently, Javascript is required to connect to your backpack. If you can, enable Javascript and reload the page.';
-$string['signinwithyouremail'] = 'Sign in with your email';
 
 // Deprecated since Moodle 3.6.
 $string['error:invalidbadgeurl'] = 'Invalid issuer URL format. The URL should have a prefix http:// or https://.';

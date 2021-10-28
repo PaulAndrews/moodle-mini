@@ -278,18 +278,9 @@ if ($bulkoperations) {
     if ($participanttable->get_page_size() < $participanttable->totalrows) {
         // Select all users, refresh page showing all users and mark them all selected.
         $label = get_string('selectalluserswithcount', 'moodle', $participanttable->totalrows);
-        echo html_writer::empty_tag('input', array('type' => 'button', 'id' => 'checkall', 'class' => 'btn btn-secondary',
+        echo html_writer::tag('input', "", array('type' => 'button', 'id' => 'checkall', 'class' => 'btn btn-secondary',
                 'value' => $label, 'data-showallink' => $showalllink));
-        // Select all users, mark all users on page as selected.
-        echo html_writer::tag('input', "", array('type' => 'button', 'id' => 'checkallonpage', 'class' => 'btn btn-secondary',
-        'value' => get_string('selectallusersonpage')));
-    } else {
-        echo html_writer::tag('input', "", array('type' => 'button', 'id' => 'checkallonpage', 'class' => 'btn btn-secondary',
-        'value' => get_string('selectall')));
     }
-
-    echo html_writer::tag('input', "", array('type' => 'button', 'id' => 'checknone', 'class' => 'btn btn-secondary',
-        'value' => get_string('deselectall')));
     echo html_writer::end_tag('div');
     $displaylist = array();
     if (!empty($CFG->messaging)) {
@@ -339,12 +330,22 @@ if ($bulkoperations) {
         }
     }
 
-    $label = html_writer::tag('label', get_string("withselectedusers"),
-            ['for' => 'formactionid', 'class' => 'col-form-label d-inline']);
-    $select = html_writer::select($displaylist, 'formaction', '', ['' => 'choosedots'], ['id' => 'formactionid']);
-    echo html_writer::tag('div', $label . $select, ['class' => 'ml-2']);
+    $selectactionparams = array(
+        'id' => 'formactionid',
+        'class' => 'ml-2',
+        'data-action' => 'toggle',
+        'data-togglegroup' => 'participants-table',
+        'data-toggle' => 'action',
+        'disabled' => empty($selectall)
+    );
+    echo html_writer::tag('div', html_writer::tag('label', get_string("withselectedusers"),
+        array('for' => 'formactionid', 'class' => 'col-form-label d-inline')) .
+        html_writer::select($displaylist, 'formaction', '', array('' => 'choosedots'), $selectactionparams));
 
-    echo '<input type="hidden" name="id" value="' . $course->id . '" />';
+    echo '<input type="hidden" name="id" value="'.$course->id.'" />';
+    echo '<noscript style="display:inline">';
+    echo '<div><input type="submit" value="'.get_string('ok').'" /></div>';
+    echo '</noscript>';
     echo '</div></div></div>';
     echo '</form>';
 
@@ -359,8 +360,6 @@ echo '</div>';  // Userlist.
 
 $enrolrenderer = $PAGE->get_renderer('core_enrol');
 echo '<div class="float-right">';
-// Need to re-generate the buttons to avoid having elements with duplicate ids on the page.
-$enrolbuttons = $manager->get_manual_enrol_buttons();
 foreach ($enrolbuttons as $enrolbutton) {
     echo $enrolrenderer->render($enrolbutton);
 }

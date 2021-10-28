@@ -245,6 +245,9 @@ class restore_gradebook_structure_step extends restore_structure_step {
             }
 
             $newitemid = $DB->insert_record('grade_items', $data);
+            $data->id = $newitemid;
+            $gradeitem = new grade_item($data);
+            core\event\grade_item_created::create_from_grade_item($gradeitem)->trigger();
         }
         $this->set_mapping('grade_item', $oldid, $newitemid);
     }
@@ -2110,29 +2113,14 @@ class restore_ras_and_caps_structure_step extends restore_structure_step {
         $data = (object)$data;
 
         // Check roleid is one of the mapped ones
-        $newrole = $this->get_mapping('role', $data->roleid);
-        $newroleid = $newrole->newitemid ?? false;
-        $userid = $this->task->get_userid();
-
+        $newroleid = $this->get_mappingid('role', $data->roleid);
         // If newroleid and context are valid assign it via API (it handles dupes and so on)
         if ($newroleid && $this->task->get_contextid()) {
-            if (!$capability = get_capability_info($data->capability)) {
+            if (!get_capability_info($data->capability)) {
                 $this->log("Capability '{$data->capability}' was not found!", backup::LOG_WARNING);
             } else {
-                $context = context::instance_by_id($this->task->get_contextid());
-                $overrideableroles = get_overridable_roles($context, ROLENAME_SHORT);
-                $safecapability = is_safe_capability($capability);
-
-                // Check if the new role is an overrideable role AND if the user performing the restore has the
-                // capability to assign the capability.
-                if (in_array($newrole->info['shortname'], $overrideableroles) &&
-                    ($safecapability && has_capability('moodle/role:safeoverride', $context, $userid) ||
-                        !$safecapability && has_capability('moodle/role:override', $context, $userid))
-                ) {
-                    assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
-                } else {
-                    $this->log("Insufficient capability to assign capability '{$data->capability}' to role!", backup::LOG_WARNING);
-                }
+                // TODO: assign_capability() needs one userid param to be able to specify our restore userid.
+                assign_capability($data->capability, $data->permission, $newroleid, $this->task->get_contextid());
             }
         }
     }
@@ -2152,22 +2140,11 @@ class restore_default_enrolments_step extends restore_execution_step {
         }
 
         $course = $DB->get_record('course', array('id'=>$this->get_courseid()), '*', MUST_EXIST);
-        // Return any existing course enrolment instances.
-        $enrolinstances = enrol_get_instances($course->id, false);
 
-        if ($enrolinstances) {
-            // Something already added instances.
-            // Get the existing enrolment methods in the course.
-            $enrolmethods = array_map(function($enrolinstance) {
-                return $enrolinstance->enrol;
-            }, $enrolinstances);
-
+        if ($DB->record_exists('enrol', array('courseid'=>$this->get_courseid(), 'enrol'=>'manual'))) {
+            // Something already added instances, do not add default instances.
             $plugins = enrol_get_plugins(true);
-            foreach ($plugins as $pluginname => $plugin) {
-                // Make sure all default enrolment methods exist in the course.
-                if (!in_array($pluginname, $enrolmethods)) {
-                    $plugin->course_updated(true, $course, null);
-                }
+            foreach ($plugins as $plugin) {
                 $plugin->restore_sync_course($course);
             }
 
@@ -4203,6 +4180,9 @@ class restore_module_structure_step extends restore_structure_step {
         // Apply for 'format' plugins optional paths at module level
         $this->add_plugin_structure('format', $module);
 
+        // Apply for 'report' plugins optional paths at module level.
+        $this->add_plugin_structure('report', $module);
+
         // Apply for 'plagiarism' plugins optional paths at module level
         $this->add_plugin_structure('plagiarism', $module);
 
@@ -5346,10 +5326,9 @@ class restore_process_file_aliases_queue extends restore_execution_step {
 
 
 /**
- * Abstract structure step, to be used by all the activities using core questions stuff
- * (like the quiz module), to support qtype plugins, states and sessions
+ * Helper code for use by any plugin that stores question attempt data that it needs to back up.
  */
-abstract class restore_questions_activity_structure_step extends restore_activity_structure_step {
+trait restore_questions_attempt_data_trait {
     /** @var array question_attempt->id to qtype. */
     protected $qtypes = array();
     /** @var array question_attempt->id to questionid. */
@@ -5401,21 +5380,21 @@ abstract class restore_questions_activity_structure_step extends restore_activit
     /**
      * Process question_usages
      */
-    protected function process_question_usage($data) {
+    public function process_question_usage($data) {
         $this->restore_question_usage_worker($data, '');
     }
 
     /**
      * Process question_attempts
      */
-    protected function process_question_attempt($data) {
+    public function process_question_attempt($data) {
         $this->restore_question_attempt_worker($data, '');
     }
 
     /**
      * Process question_attempt_steps
      */
-    protected function process_question_attempt_step($data) {
+    public function process_question_attempt_step($data) {
         $this->restore_question_attempt_step_worker($data, '');
     }
 
@@ -5435,8 +5414,7 @@ abstract class restore_questions_activity_structure_step extends restore_activit
         $data = (object)$data;
         $oldid = $data->id;
 
-        $oldcontextid = $this->get_task()->get_old_contextid();
-        $data->contextid  = $this->get_mappingid('context', $this->task->get_old_contextid());
+        $data->contextid  = $this->task->get_contextid();
 
         // Everything ready, insert (no mapping needed)
         $newitemid = $DB->insert_record('question_usages', $data);
@@ -5592,6 +5570,17 @@ abstract class restore_questions_activity_structure_step extends restore_activit
             $this->add_related_files('question', $filearea, 'question_attempt_step');
         }
     }
+}
+
+
+/**
+ * Abstract structure step to help activities that store question attempt data.
+ *
+ * @copyright 2011 The Open University
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+abstract class restore_questions_activity_structure_step extends restore_activity_structure_step {
+    use restore_questions_attempt_data_trait;
 
     /**
      * Attach below $element (usually attempts) the needed restore_path_elements
@@ -5635,7 +5624,7 @@ abstract class restore_questions_activity_structure_step extends restore_activit
     /**
      * Process the attempt data defined by {@link add_legacy_question_attempt_data()}.
      * @param object $data contains all the grouped attempt data to process.
-     * @param pbject $quiz data about the activity the attempts belong to. Required
+     * @param object $quiz data about the activity the attempts belong to. Required
      * fields are (basically this only works for the quiz module):
      *      oldquestions => list of question ids in this activity - using old ids.
      *      preferredbehaviour => the behaviour to use for questionattempts.
@@ -5697,7 +5686,7 @@ abstract class restore_questions_activity_structure_step extends restore_activit
 
         $data->uniqueid = $usage->id;
         $upgrader->save_usage($quiz->preferredbehaviour, $data, $qas,
-                 $this->questions_recode_layout($quiz->oldquestions));
+                $this->questions_recode_layout($quiz->oldquestions));
     }
 
     protected function find_question_session_and_states($data, $questionid) {
@@ -5756,6 +5745,7 @@ abstract class restore_questions_activity_structure_step extends restore_activit
         }
     }
 }
+
 
 /**
  * Restore completion defaults for each module type

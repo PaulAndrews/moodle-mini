@@ -182,6 +182,10 @@
     background-color: #fc9;
 }
 
+.path-mod-assign .gradingtable .commentscontainer .comment-ctrl .comment-area textarea {
+    resize: both;
+}
+
 .path-mod-assign td.submissioneditable {
     color: red;
 }
@@ -190,8 +194,12 @@
     display: none;
 }
 
+.path-mod-assign .expandsummaryicon i {
+    pointer-events: none;
+}
+
 .path-mod-assign.jsenabled .expandsummaryicon {
-    display: inline-block;
+    display: inline;
 }
 
 .path-mod-assign .hidefull {

@@ -179,13 +179,12 @@ function theme_get_css_filename($themename, $globalrevision, $themerevision, $di
  * @param theme_config[] $themeconfigs An array of theme_config instances.
  * @param array          $directions   Must be a subset of ['rtl', 'ltr'].
  * @param bool           $cache        Should the generated files be stored in local cache.
- * @return array         The built theme content in a multi-dimensional array of name => direction => content
  */
-function theme_build_css_for_themes($themeconfigs = [], $directions = ['rtl', 'ltr'], $cache = true): array {
+function theme_build_css_for_themes($themeconfigs = [], $directions = ['rtl', 'ltr'], $cache = true) {
     global $CFG;
 
     if (empty($themeconfigs)) {
-        return [];
+        return;
     }
 
     require_once("{$CFG->libdir}/csslib.php");
@@ -213,7 +212,7 @@ function theme_build_css_for_themes($themeconfigs = [], $directions = ['rtl', 'l
                 css_store_css($themeconfig, $filename, $themecss[$direction]);
             }
         }
-        $themescss[$themeconfig->name] = $themecss;
+        $themescss[] = $themecss;
 
         if ($cache) {
             // Only update the theme revision after we've successfully created the
@@ -614,15 +613,9 @@ class theme_config {
     protected $rtlmode = false;
 
     /**
-     * The LESS file to compile. When set, the theme will attempt to compile the file itself.
-     * @var bool
-     */
-    public $lessfile = false;
-
-    /**
      * The SCSS file to compile (without .scss), located in the scss/ folder of the theme.
      * Or a Closure, which receives the theme_config as argument and must
-     * return the SCSS content. This setting takes precedence over self::$lessfile.
+     * return the SCSS content.
      * @var string|Closure
      */
     public $scss = false;
@@ -634,22 +627,10 @@ class theme_config {
     protected $scsscache = null;
 
     /**
-     * The name of the function to call to get the LESS code to inject.
-     * @var string
-     */
-    public $extralesscallback = null;
-
-    /**
      * The name of the function to call to get the SCSS code to inject.
      * @var string
      */
     public $extrascsscallback = null;
-
-    /**
-     * The name of the function to call to get extra LESS variables.
-     * @var string
-     */
-    public $lessvariablescallback = null;
 
     /**
      * The name of the function to call to get SCSS to prepend.
@@ -751,8 +732,7 @@ class theme_config {
             'javascripts', 'javascripts_footer', 'parents_exclude_javascripts',
             'layouts', 'enablecourseajax', 'requiredblocks',
             'rendererfactory', 'csspostprocess', 'editor_sheets', 'editor_scss', 'rarrow', 'larrow', 'uarrow', 'darrow',
-            'hidefromselector', 'doctype', 'yuicssmodules', 'blockrtlmanipulations',
-            'lessfile', 'extralesscallback', 'lessvariablescallback', 'blockrendermethod',
+            'hidefromselector', 'doctype', 'yuicssmodules', 'blockrtlmanipulations', 'blockrendermethod',
             'scss', 'extrascsscallback', 'prescsscallback', 'csstreepostprocessor', 'addblockposition',
             'iconsystem', 'precompiledcsscallback');
 
@@ -981,31 +961,12 @@ class theme_config {
      */
     public function editor_scss_to_css() {
         $css = '';
-        $dir = $this->dir;
-        $filenames = [];
 
-        // Use editor_scss file(s) provided by this theme if set.
         if (!empty($this->editor_scss)) {
-            $filenames = $this->editor_scss;
-        } else {
-            // If no editor_scss set, move up theme hierarchy until one is found (if at all).
-            // This is so child themes only need to set editor_scss if an override is required.
-            foreach (array_reverse($this->parent_configs) as $parentconfig) {
-                if (!empty($parentconfig->editor_scss)) {
-                    $dir = $parentconfig->dir;
-                    $filenames = $parentconfig->editor_scss;
-
-                    // Config found, stop looking.
-                    break;
-                }
-            }
-        }
-
-        if (!empty($filenames)) {
             $compiler = new core_scss();
 
-            foreach ($filenames as $filename) {
-                $compiler->set_file("{$dir}/scss/{$filename}.scss");
+            foreach ($this->editor_scss as $filename) {
+                $compiler->set_file("{$this->dir}/scss/{$filename}.scss");
 
                 try {
                     $css .= $compiler->to_css();
@@ -1097,9 +1058,6 @@ class theme_config {
                 if ($this->get_scss_property()) {
                     // No need to define the type as IE here.
                     $urls[] = new moodle_url($baseurl, array('theme' => $this->name, 'type' => 'scss'));
-                } else if (!empty($this->lessfile)) {
-                    // No need to define the type as IE here.
-                    $urls[] = new moodle_url($baseurl, array('theme' => $this->name, 'type' => 'less'));
                 }
                 $urls[] = new moodle_url($baseurl, array('theme'=>$this->name, 'type'=>'ie', 'subtype'=>'theme'));
 
@@ -1116,9 +1074,6 @@ class theme_config {
                     if ($sheet === self::SCSS_KEY) {
                         // This is the theme SCSS file.
                         $urls[] = new moodle_url($baseurl, array('theme' => $this->name, 'type' => 'scss'));
-                    } else if ($sheet === $this->lessfile) {
-                        // This is the theme LESS file.
-                        $urls[] = new moodle_url($baseurl, array('theme' => $this->name, 'type' => 'less'));
                     } else {
                         // Sheet first in order to make long urls easier to read.
                         $urls[] = new moodle_url($baseurl, array('sheet'=>$sheet, 'theme'=>$this->name, 'type'=>'theme'));
@@ -1127,6 +1082,8 @@ class theme_config {
             }
         }
 
+        // Allow themes to change the css url to something like theme/mytheme/mycss.php.
+        component_callback('theme_' . $this->name, 'alter_css_urls', [&$urls]);
         return $urls;
     }
 
@@ -1156,9 +1113,6 @@ class theme_config {
                             // exist.
                             $csscontent .= $this->get_precompiled_css_content();
                         }
-                    } else if ($type === 'theme' && $identifier === $this->lessfile) {
-                        // We need the content from LESS because this is the LESS file from the theme.
-                        $csscontent .= $this->get_css_content_from_less(false);
                     } else {
                         $csscontent .= file_get_contents($val) . "\n";
                     }
@@ -1242,13 +1196,6 @@ class theme_config {
                 return $this->post_process($csscontent);
             }
             return '';
-        } else if ($type === 'less') {
-            // The LESS file of the theme is requested.
-            $csscontent = $this->get_css_content_from_less(true);
-            if ($csscontent !== false) {
-                return $this->post_process($csscontent);
-            }
-            return '';
         }
 
         $cssfiles = array();
@@ -1271,9 +1218,9 @@ class theme_config {
             } else if ($subtype === 'theme') {
                 $cssfiles = $css['theme'];
                 foreach ($cssfiles as $key => $value) {
-                    if (in_array($key, [$this->lessfile, self::SCSS_KEY])) {
-                        // Remove the LESS/SCSS file from the theme CSS files.
-                        // The LESS/SCSS files use the type 'less' or 'scss', not 'ie'.
+                    if (in_array($key, [self::SCSS_KEY])) {
+                        // Remove the SCSS file from the theme CSS files.
+                        // The SCSS files use the type 'scss', not 'ie'.
                         unset($cssfiles[$key]);
                     }
                 }
@@ -1421,17 +1368,11 @@ class theme_config {
         }
 
 
-        // Current theme sheets and less file.
-        // We first add the SCSS, or LESS file because we want the CSS ones to
-        // be included after the SCSS/LESS code. However, if both the LESS file
-        // and a CSS file share the same name, the CSS file is ignored.
+        // Current theme sheets.
+        // We first add the SCSS file because we want the CSS ones to
+        // be included after the SCSS code.
         if ($this->get_scss_property()) {
             $cssfiles['theme'][self::SCSS_KEY] = true;
-        } else if (!empty($this->lessfile)) {
-            $sheetfile = "{$this->dir}/less/{$this->lessfile}.less";
-            if (is_readable($sheetfile)) {
-                $cssfiles['theme'][$this->lessfile] = $sheetfile;
-            }
         }
         if (is_array($this->sheets)) {
             foreach ($this->sheets as $sheet) {
@@ -1448,72 +1389,6 @@ class theme_config {
             $cache->set($cachekey, $files);
         }
         return $cssfiles;
-    }
-
-    /**
-     * Return the CSS content generated from LESS the file.
-     *
-     * @param bool $themedesigner True if theme designer is enabled.
-     * @return bool|string Return false when the compilation failed. Else the compiled string.
-     */
-    protected function get_css_content_from_less($themedesigner) {
-        global $CFG;
-
-        $lessfile = $this->lessfile;
-        if (!$lessfile || !is_readable($this->dir . '/less/' . $lessfile . '.less')) {
-            throw new coding_exception('The theme did not define a LESS file, or it is not readable.');
-        }
-
-        // We might need more memory/time to do this, so let's play safe.
-        raise_memory_limit(MEMORY_EXTRA);
-        core_php_time_limit::raise(300);
-
-        // Files list.
-        $files = $this->get_css_files($themedesigner);
-
-        // Get the LESS file path.
-        $themelessfile = $files['theme'][$lessfile];
-
-        // Setup compiler options.
-        $options = array(
-            // We need to set the import directory to where $lessfile is.
-            'import_dirs' => array(dirname($themelessfile) => '/'),
-            // Always disable default caching.
-            'cache_method' => false,
-            // Disable the relative URLs, we have post_process() to handle that.
-            'relativeUrls' => false,
-        );
-
-        if ($themedesigner) {
-            // Add the sourceMap inline to ensure that it is atomically generated.
-            $options['sourceMap'] = true;
-            $options['sourceMapBasepath'] = $CFG->dirroot;
-            $options['sourceMapRootpath'] = $CFG->wwwroot;
-        }
-
-        // Instantiate the compiler.
-        $compiler = new core_lessc($options);
-
-        try {
-            $compiler->parse_file_content($themelessfile);
-
-            // Get the callbacks.
-            $compiler->parse($this->get_extra_less_code());
-            $compiler->ModifyVars($this->get_less_variables());
-
-            // Compile the CSS.
-            $compiled = $compiler->getCss();
-
-        } catch (Less_Exception_Parser $e) {
-            $compiled = false;
-            debugging('Error while compiling LESS ' . $lessfile . ' file: ' . $e->getMessage(), DEBUG_DEVELOPER);
-        }
-
-        // Try to save memory.
-        $compiler = null;
-        unset($compiler);
-
-        return $compiled;
     }
 
     /**
@@ -1599,71 +1474,6 @@ class theme_config {
             }
         }
         return \core\output\icon_system::STANDARD;
-    }
-
-    /**
-     * Return extra LESS variables to use when compiling.
-     *
-     * @return array Where keys are the variable names (omitting the @), and the values are the value.
-     */
-    protected function get_less_variables() {
-        $variables = array();
-
-        // Getting all the candidate functions.
-        $candidates = array();
-        foreach ($this->parent_configs as $parent_config) {
-            if (!isset($parent_config->lessvariablescallback)) {
-                continue;
-            }
-            $candidates[] = $parent_config->lessvariablescallback;
-        }
-        $candidates[] = $this->lessvariablescallback;
-
-        // Calling the functions.
-        foreach ($candidates as $function) {
-            if (function_exists($function)) {
-                $vars = $function($this);
-                if (!is_array($vars)) {
-                    debugging('Callback ' . $function . ' did not return an array() as expected', DEBUG_DEVELOPER);
-                    continue;
-                }
-                $variables = array_merge($variables, $vars);
-            }
-        }
-
-        return $variables;
-    }
-
-    /**
-     * Return extra LESS code to add when compiling.
-     *
-     * This is intended to be used by themes to inject some LESS code
-     * before it gets compiled. If you want to inject variables you
-     * should use {@link self::get_less_variables()}.
-     *
-     * @return string The LESS code to inject.
-     */
-    protected function get_extra_less_code() {
-        $content = '';
-
-        // Getting all the candidate functions.
-        $candidates = array();
-        foreach ($this->parent_configs as $parent_config) {
-            if (!isset($parent_config->extralesscallback)) {
-                continue;
-            }
-            $candidates[] = $parent_config->extralesscallback;
-        }
-        $candidates[] = $this->extralesscallback;
-
-        // Calling the functions.
-        foreach ($candidates as $function) {
-            if (function_exists($function)) {
-                $content .= "\n/** Extra LESS from $function **/\n" . $function($this) . "\n";
-            }
-        }
-
-        return $content;
     }
 
     /**

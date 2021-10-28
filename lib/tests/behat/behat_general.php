@@ -74,7 +74,7 @@ class behat_general extends behat_base {
      * @Given /^I am on homepage$/
      */
     public function i_am_on_homepage() {
-        $this->execute('behat_general::i_visit', ['/']);
+        $this->getSession()->visit($this->locate_path('/'));
     }
 
     /**
@@ -83,7 +83,7 @@ class behat_general extends behat_base {
      * @Given /^I am on site homepage$/
      */
     public function i_am_on_site_homepage() {
-        $this->execute('behat_general::i_visit', ['/?redirect=0']);
+        $this->getSession()->visit($this->locate_path('/?redirect=0'));
     }
 
     /**
@@ -92,7 +92,7 @@ class behat_general extends behat_base {
      * @Given /^I am on course index$/
      */
     public function i_am_on_course_index() {
-        $this->execute('behat_general::i_visit', ['/course/index.php']);
+        $this->getSession()->visit($this->locate_path('/course/index.php'));
     }
 
     /**
@@ -179,6 +179,34 @@ class behat_general extends behat_base {
     }
 
     /**
+     * Switches to the iframe containing specified class.
+     *
+     * @Given /^I switch to "(?P<iframe_name_string>(?:[^"]|\\")*)" class iframe$/
+     * @param string $classname
+     */
+    public function switch_to_class_iframe($classname) {
+        // We spin to give time to the iframe to be loaded.
+        // Using extended timeout as we don't know about which
+        // kind of iframe will be loaded.
+        $this->spin(
+            function($context, $classname) {
+                $iframe = $this->find('iframe', $classname);
+                if (!empty($iframe->getAttribute('id'))) {
+                    $iframename = $iframe->getAttribute('id');
+                } else {
+                    $iframename = $iframe->getAttribute('name');
+                }
+                $context->getSession()->switchToIFrame($iframename);
+
+                // If no exception we are done.
+                return true;
+            },
+            $classname,
+            behat_base::get_extended_timeout()
+        );
+    }
+
+    /**
      * Switches to the main Moodle frame.
      *
      * @Given /^I switch to the main frame$/
@@ -200,7 +228,8 @@ class behat_general extends behat_base {
         // unnamed window (presumably the main window) to some other named
         // window, then we first set the main window name to a conventional
         // value that we can later use this name to switch back.
-        $this->execute_script('if (window.name == "") window.name = "' . self::MAIN_WINDOW_NAME . '"');
+        $this->getSession()->executeScript(
+                'if (window.name == "") window.name = "' . self::MAIN_WINDOW_NAME . '"');
 
         $this->getSession()->switchToWindow($windowname);
     }
@@ -871,7 +900,7 @@ class behat_general extends behat_base {
     return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
 })()
 EOF;
-            $ok = $this->evaluate_script($js);
+            $ok = $this->getSession()->getDriver()->evaluateScript($js);
         } else {
 
             // Using following xpath axe to find it.
@@ -989,7 +1018,11 @@ EOF;
             // Using the spin method as we want a reduced timeout but there is no need for a 0.1 seconds interval
             // because in the optimistic case we will timeout.
             // If all goes good it will throw an ElementNotFoundExceptionn that we will catch.
-            return $this->find($selectortype, $element, $exception, false, behat_base::get_reduced_timeout());
+            $this->spin(
+                function($context, $args) use ($selectortype, $element) {
+                    return $this->find($selectortype, $element);
+                }, [], behat_base::get_reduced_timeout(), $exception, false
+            );
         } catch (ElementNotFoundException $e) {
             // We expect the element to not be found.
             return;
@@ -1005,7 +1038,7 @@ EOF;
      * @Given /^I trigger cron$/
      */
     public function i_trigger_cron() {
-        $this->execute('behat_general::i_visit', ['/admin/cron.php']);
+        $this->getSession()->visit($this->locate_path('/admin/cron.php'));
     }
 
     /**
@@ -1556,12 +1589,11 @@ EOF;
 
         $this->pageloaddetectionrunning = true;
 
-        $this->execute_script(
-            'var span = document.createElement("span");
-            span.setAttribute("data-rel", "' . self::PAGE_LOAD_DETECTION_STRING . '");
-            span.setAttribute("style", "display: none;");
-            document.body.appendChild(span);'
-        );
+        $session->executeScript(
+                'var span = document.createElement("span");
+                span.setAttribute("data-rel", "' . self::PAGE_LOAD_DETECTION_STRING . '");
+                span.setAttribute("style", "display: none;");
+                document.body.appendChild(span);');
     }
 
     /**
@@ -1759,7 +1791,7 @@ EOF;
         $xpath = addslashes_js($element->getXpath());
         $script = 'return (function() { return document.activeElement === document.evaluate("' . $xpath . '",
                 document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; })(); ';
-        $targetisfocused = $this->evaluate_script($script);
+        $targetisfocused = $this->getSession()->evaluateScript($script);
         if ($not == ' not') {
             if ($targetisfocused) {
                 throw new ExpectationException("$nodeelement $nodeselectortype is focused", $this->getSession());
@@ -1791,7 +1823,7 @@ EOF;
         $xpath = addslashes_js($element->getXpath());
         $script = 'return (function() { return document.activeElement === document.evaluate("' . $xpath . '",
                 document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue; })(); ';
-        $targetisfocused = $this->evaluate_script($script);
+        $targetisfocused = $this->getSession()->evaluateScript($script);
         if ($not == ' not') {
             if ($targetisfocused) {
                 throw new ExpectationException("$nodeelement $nodeselectortype is focused", $this->getSession());
@@ -1835,14 +1867,39 @@ EOF;
     }
 
     /**
-     * Visit a local URL relative to the behat root.
+     * Checks, that the specified element contains the specified text a certain amount of times.
+     * When running Javascript tests it also considers that texts may be hidden.
      *
-     * @When I visit :localurl
-     *
-     * @param string|moodle_url $localurl The URL relative to the behat_wwwroot to visit.
+     * @Then /^I should see "(?P<elementscount_number>\d+)" occurrences of "(?P<text_string>(?:[^"]|\\")*)" in the "(?P<element_string>(?:[^"]|\\")*)" "(?P<text_selector_string>[^"]*)"$/
+     * @throws ElementNotFoundException
+     * @throws ExpectationException
+     * @param int    $elementscount How many occurrences of the element we look for.
+     * @param string $text
+     * @param string $element Element we look in.
+     * @param string $selectortype The type of element where we are looking in.
      */
-    public function i_visit($localurl): void {
-        $localurl = new moodle_url($localurl);
-        $this->getSession()->visit($this->locate_path($localurl->out_as_local_url(false)));
+    public function i_should_see_occurrences_of_in_element($elementscount, $text, $element, $selectortype) {
+
+        // Getting the container where the text should be found.
+        $container = $this->get_selected_node($selectortype, $element);
+
+        // Looking for all the matching nodes without any other descendant matching the
+        // same xpath (we are using contains(., ....).
+        $xpathliteral = behat_context_helper::escape($text);
+        $xpath = "/descendant-or-self::*[contains(., $xpathliteral)]" .
+                "[count(descendant::*[contains(., $xpathliteral)]) = 0]";
+
+        $nodes = $this->find_all('xpath', $xpath, false, $container);
+
+        if ($this->running_javascript()) {
+            $nodes = array_filter($nodes, function($node) {
+                return $node->isVisible();
+            });
+        }
+
+        if ($elementscount != count($nodes)) {
+            throw new ExpectationException('Found '.count($nodes).' elements in column. Expected '.$elementscount,
+                    $this->getSession());
+        }
     }
 }
