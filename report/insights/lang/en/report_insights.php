@@ -22,8 +22,9 @@
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['actionsaved'] = 'Your action has been saved.';
 $string['calculatedvalue'] = 'Calculated value';
-$string['disabledmodel'] = 'This model has been disabled by an administrator.';
+$string['disabledmodel'] = 'Sorry, this model has been disabled by the administrator';
 $string['indicator'] = 'Indicator';
 $string['insightprediction'] = '{$a} prediction';
 $string['insight'] = 'Insight';

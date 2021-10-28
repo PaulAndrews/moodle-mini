@@ -2438,8 +2438,8 @@ function glossary_generate_export_file($glossary, $ignored = "", $hook = 0) {
  * @return string
  */
 function glossary_read_imported_file($file_content) {
-    global $CFG;
     require_once "../../lib/xmlize.php";
+    global $CFG;
 
     return xmlize($file_content, 0);
 }

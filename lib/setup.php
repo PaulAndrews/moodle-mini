@@ -620,12 +620,8 @@ setup_validate_php_configuration();
 setup_DB();
 
 if (PHPUNIT_TEST and !PHPUNIT_UTIL) {
-    // Make sure tests do not run in parallel.
-    $suffix = '';
-    if (phpunit_util::is_in_isolated_process()) {
-        $suffix = '.isolated';
-    }
-    test_lock::acquire('phpunit', $suffix);
+    // make sure tests do not run in parallel
+    test_lock::acquire('phpunit');
     $dbhash = null;
     try {
         if ($dbhash = $DB->get_field('config', 'value', array('name'=>'phpunittest'))) {

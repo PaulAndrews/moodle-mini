@@ -36,24 +36,18 @@ class core_moodlelib_testcase extends advanced_testcase {
      * It is not possible to directly change the result of get_string in
      * a unit test. Instead, we create a language pack for language 'xx' in
      * dataroot and make langconfig.php with the string we need to change.
-     * The default example separator used here is 'X'; on PHP 5.3 and before this
+     * The example separator used here is 'X'; on PHP 5.3 and before this
      * must be a single byte character due to PHP bug/limitation in
      * number_format, so you can't use UTF-8 characters.
-     *
-     * @param string $decsep Separator character. Defaults to `'X'`.
      */
-    protected function define_local_decimal_separator(string $decsep = 'X') {
+    protected function define_local_decimal_separator() {
         global $SESSION, $CFG;
 
         $SESSION->lang = 'xx';
-        $langconfig = "<?php\n\$string['decsep'] = '$decsep';";
+        $langconfig = "<?php\n\$string['decsep'] = 'X';";
         $langfolder = $CFG->dataroot . '/lang/xx';
         check_dir_exists($langfolder);
         file_put_contents($langfolder . '/langconfig.php', $langconfig);
-
-        // Ensure the new value is picked up and not taken from the cache.
-        $stringmanager = get_string_manager();
-        $stringmanager->reset_caches(true);
     }
 
     public function test_cleanremoteaddr() {
@@ -529,6 +523,38 @@ class core_moodlelib_testcase extends advanced_testcase {
         $this->assertSame('', clean_param('_user', PARAM_COMPONENT));
         $this->assertSame('', clean_param('2rating', PARAM_COMPONENT));
         $this->assertSame('', clean_param('user_', PARAM_COMPONENT));
+    }
+
+    public function test_clean_param_localisedfloat() {
+
+        $this->assertSame(0.5, clean_param('0.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('0X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(0.5, clean_param('.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(10.5, clean_param('10.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('10X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(1000.5, clean_param('1 000.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('1 000X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('1.000.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('1X000X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('nan', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('10.6blah', PARAM_LOCALISEDFLOAT));
+
+        // Tests with a localised decimal separator.
+        $this->define_local_decimal_separator();
+
+        $this->assertSame(0.5, clean_param('0.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(0.5, clean_param('0X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(0.5, clean_param('.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(0.5, clean_param('X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(10.5, clean_param('10.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(10.5, clean_param('10X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(1000.5, clean_param('1 000.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(1000.5, clean_param('1 000X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('1.000.5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('1X000X5', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('nan', PARAM_LOCALISEDFLOAT));
+        $this->assertSame(false, clean_param('10X6blah', PARAM_LOCALISEDFLOAT));
     }
 
     public function test_is_valid_plugin_name() {
@@ -2231,14 +2257,6 @@ class core_moodlelib_testcase extends advanced_testcase {
         // Localisation off.
         $this->assertEquals('5.43000', format_float(5.43, 5, false));
         $this->assertEquals('5.43', format_float(5.43, 5, false, true));
-
-        // Tests with tilde as localised decimal separator.
-        $this->define_local_decimal_separator('~');
-
-        // Must also work for '~' as decimal separator.
-        $this->assertEquals('5', format_float(5.0001, 3, true, true));
-        $this->assertEquals('5~43000', format_float(5.43, 5));
-        $this->assertEquals('5~43', format_float(5.43, 5, true, true));
     }
 
     /**
@@ -3601,10 +3619,6 @@ class core_moodlelib_testcase extends advanced_testcase {
      * Tests the getremoteaddr() function.
      */
     public function test_getremoteaddr() {
-        global $CFG;
-
-        $this->resetAfterTest();
-        $CFG->getremoteaddrconf = GETREMOTEADDR_SKIP_HTTP_CLIENT_IP;
         $xforwardedfor = isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : null;
 
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '';
@@ -3621,27 +3635,27 @@ class core_moodlelib_testcase extends advanced_testcase {
 
         $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,127.0.0.2';
         $twoip = getremoteaddr();
-        $this->assertEquals('127.0.0.2', $twoip);
+        $this->assertEquals('127.0.0.1', $twoip);
 
-        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,127.0.0.2,127.0.0.3';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,127.0.0.2, 127.0.0.3';
         $threeip = getremoteaddr();
-        $this->assertEquals('127.0.0.3', $threeip);
+        $this->assertEquals('127.0.0.1', $threeip);
 
-        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,127.0.0.2:65535';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1:65535,127.0.0.2';
         $portip = getremoteaddr();
-        $this->assertEquals('127.0.0.2', $portip);
+        $this->assertEquals('127.0.0.1', $portip);
 
-        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,0:0:0:0:0:0:0:2';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '0:0:0:0:0:0:0:1,127.0.0.2';
         $portip = getremoteaddr();
-        $this->assertEquals('0:0:0:0:0:0:0:2', $portip);
+        $this->assertEquals('0:0:0:0:0:0:0:1', $portip);
 
-        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,0::2';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '0::1,127.0.0.2';
         $portip = getremoteaddr();
-        $this->assertEquals('0:0:0:0:0:0:0:2', $portip);
+        $this->assertEquals('0:0:0:0:0:0:0:1', $portip);
 
-        $_SERVER['HTTP_X_FORWARDED_FOR'] = '127.0.0.1,[0:0:0:0:0:0:0:2]:65535';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '[0:0:0:0:0:0:0:1]:65535,127.0.0.2';
         $portip = getremoteaddr();
-        $this->assertEquals('0:0:0:0:0:0:0:2', $portip);
+        $this->assertEquals('0:0:0:0:0:0:0:1', $portip);
 
         $_SERVER['HTTP_X_FORWARDED_FOR'] = $xforwardedfor;
 
@@ -4410,5 +4424,21 @@ class core_moodlelib_testcase extends advanced_testcase {
         } else {
             $this->assertFalse($fetcheduser);
         }
+    }
+
+    /**
+     * Test for send_password_change_().
+     */
+    public function test_send_password_change_info() {
+        $this->resetAfterTest();
+
+        $user = $this->getDataGenerator()->create_user();
+
+        $sink = $this->redirectEmails(); // Make sure we are redirecting emails.
+        send_password_change_info($user);
+        $result = $sink->get_messages();
+        $sink->close();
+
+        $this->assertContains('passwords cannot be reset on this site', $result[0]->body);
     }
 }

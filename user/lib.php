@@ -246,7 +246,7 @@ function user_get_default_fields() {
         'institution', 'interests', 'firstaccess', 'lastaccess', 'auth', 'confirmed',
         'idnumber', 'lang', 'theme', 'timezone', 'mailformat', 'description', 'descriptionformat',
         'city', 'url', 'country', 'profileimageurlsmall', 'profileimageurl', 'customfields',
-        'groups', 'roles', 'preferences', 'enrolledcourses', 'suspended'
+        'groups', 'roles', 'preferences', 'enrolledcourses', 'suspended', 'lastcourseaccess'
     );
 }
 
@@ -468,6 +468,15 @@ function user_get_user_details($user, $course = null, array $userfields = array(
             $userdetails['lastaccess'] = $user->lastaccess;
         } else {
             $userdetails['lastaccess'] = 0;
+        }
+    }
+
+    // Hidden fields restriction to lastaccess field applies to both site and course access time.
+    if (in_array('lastcourseaccess', $userfields) && (!isset($hiddenfields['lastaccess']) or $isadmin)) {
+        if (isset($user->lastcourseaccess)) {
+            $userdetails['lastcourseaccess'] = $user->lastcourseaccess;
+        } else {
+            $userdetails['lastcourseaccess'] = 0;
         }
     }
 
@@ -1304,7 +1313,7 @@ function user_get_participants_sql($courseid, $groupid = 0, $accesssince = 0, $r
     // Default filter settings. We only show active by default, especially if the user has no capability to review enrolments.
     $onlyactive = true;
     $onlysuspended = false;
-    if (has_capability('moodle/course:enrolreview', $context) && (has_capability('moodle/course:viewsuspendedusers', $context))) {
+    if (has_capability('moodle/course:enrolreview', $context)) {
         switch ($statusid) {
             case ENROL_USER_ACTIVE:
                 // Nothing to do here.
@@ -1607,3 +1616,4 @@ function user_edit_map_field_purpose($userid, $fieldname) {
 
     return $purpose;
 }
+

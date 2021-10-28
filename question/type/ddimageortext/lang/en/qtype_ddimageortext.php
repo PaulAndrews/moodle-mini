@@ -70,4 +70,3 @@ $string['summarisechoiceno'] = 'Item {$a}';
 $string['summariseplaceno'] = 'Drop zone {$a}';
 $string['xleft'] = 'Left';
 $string['ytop'] = 'Top';
-$string['deletedchoice'] = '[Deleted choice]';

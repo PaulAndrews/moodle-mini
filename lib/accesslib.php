@@ -1948,6 +1948,11 @@ function can_access_course(stdClass $course, $user = null, $withcapability = '',
         return true;
     }
 
+    if (!core_course_category::can_view_course_info($course)) {
+        // No guest access if user does not have capability to browse courses.
+        return false;
+    }
+
     // if not enrolled try to gain temporary guest access
     $instances = $DB->get_records('enrol', array('courseid'=>$course->id, 'status'=>ENROL_INSTANCE_ENABLED), 'sortorder, id ASC');
     $enrols = enrol_get_plugins(true);
@@ -5249,15 +5254,6 @@ abstract class context extends stdClass implements IteratorAggregate {
         $this->_locked = $locked;
         $DB->set_field('context', 'locked', (int) $locked, ['id' => $this->id]);
         $this->mark_dirty();
-
-        if ($locked) {
-            $eventname = '\\core\\event\\context_locked';
-        } else {
-            $eventname = '\\core\\event\\context_unlocked';
-        }
-        $event = $eventname::create(['context' => $this, 'objectid' => $this->id]);
-        $event->trigger();
-
         self::reset_caches();
 
         return $this;

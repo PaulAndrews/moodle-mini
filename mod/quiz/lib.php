@@ -579,32 +579,6 @@ function quiz_user_complete($course, $user, $mod, $quiz) {
     return true;
 }
 
-/**
- * Quiz periodic clean-up tasks.
- */
-function quiz_cron() {
-    global $CFG;
-
-    require_once($CFG->dirroot . '/mod/quiz/cronlib.php');
-    mtrace('');
-
-    $timenow = time();
-    $overduehander = new mod_quiz_overdue_attempt_updater();
-
-    $processto = $timenow - get_config('quiz', 'graceperiodmin');
-
-    mtrace('  Looking for quiz overdue quiz attempts...');
-
-    list($count, $quizcount) = $overduehander->update_overdue_attempts($timenow, $processto);
-
-    mtrace('  Considered ' . $count . ' attempts in ' . $quizcount . ' quizzes.');
-
-    // Run cron for our sub-plugin types.
-    cron_execute_plugin_type('quiz', 'quiz reports');
-    cron_execute_plugin_type('quizaccess', 'quiz access rules');
-
-    return true;
-}
 
 /**
  * @param int|array $quizids A quiz ID, or an array of quiz IDs.
@@ -1154,14 +1128,6 @@ function quiz_process_options($quiz) {
     $quiz->reviewoverallfeedback = quiz_review_option_form_to_db($quiz, 'overallfeedback');
     $quiz->reviewattempt |= mod_quiz_display_options::DURING;
     $quiz->reviewoverallfeedback &= ~mod_quiz_display_options::DURING;
-
-    // Ensure that disabled checkboxes in completion settings are set to 0.
-    if (empty($quiz->completionusegrade)) {
-        $quiz->completionpass = 0;
-    }
-    if (empty($quiz->completionpass)) {
-        $quiz->completionattemptsexhausted = 0;
-    }
 }
 
 /**
@@ -2189,14 +2155,6 @@ function mod_quiz_core_calendar_provide_event_action(calendar_event $event,
 
     // Check they have capabilities allowing them to view the quiz.
     if (!has_any_capability(['mod/quiz:reviewmyattempts', 'mod/quiz:attempt'], $quizobj->get_context(), $userid)) {
-        return null;
-    }
-
-    $completion = new \completion_info($cm->get_course());
-
-    $completiondata = $completion->get_data($cm, false, $userid);
-
-    if ($completiondata->completionstate != COMPLETION_INCOMPLETE) {
         return null;
     }
 

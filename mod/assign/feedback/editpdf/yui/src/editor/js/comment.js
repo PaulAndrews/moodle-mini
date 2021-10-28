@@ -160,7 +160,7 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
     this.draw = function(focus) {
         var drawable = new M.assignfeedback_editpdf.drawable(this.editor),
             node,
-            drawingcanvas = this.editor.get_dialogue_element(SELECTOR.DRAWINGCANVAS),
+            drawingregion = this.editor.get_dialogue_element(SELECTOR.DRAWINGREGION),
             container,
             label,
             marker,
@@ -203,8 +203,8 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
             color: COMMENTTEXTCOLOUR
         });
 
-        drawingcanvas.append(container);
-        container.setStyle('position', 'absolute');
+        drawingregion.append(container);
+        container.setStyle('position', 'relative');
         container.setX(position.x);
         container.setY(position.y);
         drawable.store_position(container, position.x, position.y);
@@ -616,6 +616,23 @@ var COMMENT = function(editor, gradeid, pageno, x, y, width, colour, rawtext) {
         this.rawtext = '';
 
         return (bounds.has_min_width() && bounds.has_min_height());
+    };
+
+    /**
+     * Update comment position when rotating page.
+     * @public
+     * @method updatePosition
+     */
+    this.updatePosition = function() {
+        var node = this.drawable.nodes[0].one('textarea');
+        var container = node.ancestor('div');
+
+        var newlocation = new M.assignfeedback_editpdf.point(this.x, this.y);
+        var windowlocation = this.editor.get_window_coordinates(newlocation);
+
+        container.setX(windowlocation.x);
+        container.setY(windowlocation.y);
+        this.drawable.store_position(container, windowlocation.x, windowlocation.y);
     };
 
 };

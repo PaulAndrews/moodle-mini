@@ -1088,6 +1088,7 @@ function lesson_reset_userdata($data) {
                 }
                 $context = context_module::instance($cm->id);
                 $fs->delete_area_files($context->id, 'mod_lesson', 'essay_responses');
+                $fs->delete_area_files($context->id, 'mod_lesson', 'essay_answers');
             }
         }
 
@@ -1366,7 +1367,7 @@ function lesson_pluginfile($course, $cm, $context, $filearea, $args, $forcedownl
         }
         $fullpath = "/$context->id/mod_lesson/$filearea/$itemid/".implode('/', $args);
 
-    } else if ($filearea === 'essay_responses') {
+    } else if ($filearea === 'essay_responses' || $filearea === 'essay_answers') {
         $itemid = (int)array_shift($args);
         if (!$attempt = $DB->get_record('lesson_attempts', array('id' => $itemid))) {
             return false;
@@ -1408,6 +1409,7 @@ function lesson_get_file_areas() {
     $areas['page_answers'] = get_string('pageanswers', 'mod_lesson');
     $areas['page_responses'] = get_string('pageresponses', 'mod_lesson');
     $areas['essay_responses'] = get_string('essayresponses', 'mod_lesson');
+    $areas['essay_answers'] = get_string('essayresponses', 'mod_lesson');
     return $areas;
 }
 
@@ -1671,14 +1673,6 @@ function mod_lesson_core_calendar_provide_event_action(calendar_event $event,
 
     if (!$cm->uservisible) {
         // The module is not visible to the user for any reason.
-        return null;
-    }
-
-    $completion = new \completion_info($cm->get_course());
-
-    $completiondata = $completion->get_data($cm, false, $userid);
-
-    if ($completiondata->completionstate != COMPLETION_INCOMPLETE) {
         return null;
     }
 

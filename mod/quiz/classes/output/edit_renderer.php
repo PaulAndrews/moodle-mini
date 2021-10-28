@@ -178,7 +178,7 @@ class edit_renderer extends \plugin_renderer_base {
                 'name' => 'maxgrade', 'size' => ($structure->get_decimal_places_for_grades() + 2),
                 'value' => $structure->formatted_quiz_grade(),
                 'class' => 'form-control'));
-        $output .= html_writer::empty_tag('input', array('type' => 'submit', 'class' => 'btn btn-secondary m-l-1',
+        $output .= html_writer::empty_tag('input', array('type' => 'submit', 'class' => 'btn btn-secondary ml-1',
                 'name' => 'savechanges', 'value' => get_string('save', 'quiz')));
         $output .= html_writer::end_tag('fieldset');
         $output .= html_writer::end_tag('form');
@@ -193,7 +193,6 @@ class edit_renderer extends \plugin_renderer_base {
      * @return string HTML to output.
      */
     protected function repaginate_button(structure $structure, \moodle_url $pageurl) {
-
         $header = html_writer::tag('span', get_string('repaginatecommand', 'quiz'), array('class' => 'repaginatecommand'));
         $form = $this->repaginate_form($structure, $pageurl);
 
@@ -202,14 +201,14 @@ class edit_renderer extends \plugin_renderer_base {
             'name'  => 'repaginate',
             'id'    => 'repaginatecommand',
             'value' => get_string('repaginatecommand', 'quiz'),
-            'class' => 'btn btn-secondary m-b-1',
+            'class' => 'btn btn-secondary mb-1',
             'data-header' => $header,
             'data-form'   => $form,
         );
         if (!$structure->can_be_repaginated()) {
             $buttonoptions['disabled'] = 'disabled';
         } else {
-            $this->page->requires->yui_module('moodle-mod_quiz-repaginate', 'M.mod_quiz.repaginate.init');
+            $this->page->requires->js_call_amd('mod_quiz/repaginate', 'init');
         }
 
         return html_writer::empty_tag('input', $buttonoptions);
@@ -227,7 +226,7 @@ class edit_renderer extends \plugin_renderer_base {
             'name'  => 'selectmultiple',
             'id'    => 'selectmultiplecommand',
             'value' => get_string('selectmultipleitems', 'quiz'),
-            'class' => 'btn btn-secondary m-b-1'
+            'class' => 'btn btn-secondary mb-1'
         );
         if (!$structure->can_be_edited()) {
             $buttonoptions['disabled'] = 'disabled';
@@ -320,7 +319,7 @@ class edit_renderer extends \plugin_renderer_base {
             'type' => 'submit',
             'name' => 'repaginate',
             'value' => get_string('go'),
-            'class' => 'btn btn-secondary m-l-1'
+            'class' => 'btn btn-secondary ml-1'
         );
 
         $formcontent = html_writer::tag('form', html_writer::div(
@@ -655,20 +654,18 @@ class edit_renderer extends \plugin_renderer_base {
         $actions['questionbank'] = new \action_menu_link_secondary($pageurl, $icon, $str->questionbank, $attributes);
 
         // Add a random question.
-        if ($structure->can_add_random_questions()) {
-            $returnurl = new \moodle_url('/mod/quiz/edit.php', array('cmid' => $structure->get_cmid(), 'data-addonpage' => $page));
-            $params = ['returnurl' => $returnurl, 'cmid' => $structure->get_cmid(), 'appendqnumstring' => 'addarandomquestion'];
-            $url = new \moodle_url('/mod/quiz/addrandom.php', $params);
-            $icon = new \pix_icon('t/add', $str->addarandomquestion, 'moodle', array('class' => 'iconsmall', 'title' => ''));
-            $attributes = array('class' => 'cm-edit-action addarandomquestion', 'data-action' => 'addarandomquestion');
-            if ($page) {
-                $title = get_string('addrandomquestiontopage', 'quiz', $page);
-            } else {
-                $title = get_string('addrandomquestionatend', 'quiz');
-            }
-            $attributes = array_merge(array('data-header' => $title, 'data-addonpage' => $page), $attributes);
-            $actions['addarandomquestion'] = new \action_menu_link_secondary($url, $icon, $str->addarandomquestion, $attributes);
+        $returnurl = new \moodle_url('/mod/quiz/edit.php', array('cmid' => $structure->get_cmid(), 'data-addonpage' => $page));
+        $params = array('returnurl' => $returnurl, 'cmid' => $structure->get_cmid(), 'appendqnumstring' => 'addarandomquestion');
+        $url = new \moodle_url('/mod/quiz/addrandom.php', $params);
+        $icon = new \pix_icon('t/add', $str->addarandomquestion, 'moodle', array('class' => 'iconsmall', 'title' => ''));
+        $attributes = array('class' => 'cm-edit-action addarandomquestion', 'data-action' => 'addarandomquestion');
+        if ($page) {
+            $title = get_string('addrandomquestiontopage', 'quiz', $page);
+        } else {
+            $title = get_string('addrandomquestionatend', 'quiz');
         }
+        $attributes = array_merge(array('data-header' => $title, 'data-addonpage' => $page), $attributes);
+        $actions['addarandomquestion'] = new \action_menu_link_secondary($url, $icon, $str->addarandomquestion, $attributes);
 
         // Add a new section to the add_menu if possible. This is always added to the HTML
         // then hidden with CSS when no needed, so that as things are re-ordered, etc. with
@@ -940,7 +937,7 @@ class edit_renderer extends \plugin_renderer_base {
         $namestr = $qtype->local_name();
 
         $icon = $this->pix_icon('icon', $namestr, $qtype->plugin_name(), array('title' => $namestr,
-                'class' => 'activityicon', 'alt' => ' ', 'role' => 'presentation'));
+                'class' => 'icon activityicon', 'alt' => ' ', 'role' => 'presentation'));
 
         $editicon = $this->pix_icon('t/edit', '', 'moodle', array('title' => ''));
 
@@ -980,7 +977,7 @@ class edit_renderer extends \plugin_renderer_base {
         $qtype = \question_bank::get_qtype($question->qtype, false);
         $namestr = $qtype->local_name();
         $icon = $this->pix_icon('icon', $namestr, $qtype->plugin_name(), array('title' => $namestr,
-                'class' => 'activityicon', 'alt' => ' ', 'role' => 'presentation'));
+                'class' => 'icon activityicon', 'alt' => ' ', 'role' => 'presentation'));
 
         $editicon = $this->pix_icon('t/edit', $configuretitle, 'moodle', array('title' => ''));
         $qbankurlparams = array(

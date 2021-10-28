@@ -762,7 +762,7 @@ function print_course_request_buttons($context) {
         echo $OUTPUT->single_button(new moodle_url('/course/request.php'), get_string('requestcourse'), 'get');
     }
     /// Print a button to manage pending requests
-    if ($context->contextlevel == CONTEXT_SYSTEM && has_capability('moodle/site:approvecourse', $context)) {
+    if (has_capability('moodle/site:approvecourse', $context)) {
         $disabled = !$DB->record_exists('course_request', array());
         echo $OUTPUT->single_button(new moodle_url('/course/pending.php'), get_string('coursespending'), 'get', array('disabled' => $disabled));
     }
@@ -1289,36 +1289,16 @@ function course_module_flag_for_async_deletion($cmid) {
  * Checks whether the given course has any course modules scheduled for adhoc deletion.
  *
  * @param int $courseid the id of the course.
- * @param bool $onlygradable whether to check only gradable modules or all modules.
  * @return bool true if the course contains any modules pending deletion, false otherwise.
  */
-function course_modules_pending_deletion($courseid, bool $onlygradable = false) : bool {
+function course_modules_pending_deletion($courseid) {
     if (empty($courseid)) {
         return false;
     }
-
-    if ($onlygradable) {
-        // Fetch modules with grade items.
-        if (!$coursegradeitems = grade_item::fetch_all(['itemtype' => 'mod', 'courseid' => $courseid])) {
-            // Return early when there is none.
-            return false;
-        }
-    }
-
     $modinfo = get_fast_modinfo($courseid);
     foreach ($modinfo->get_cms() as $module) {
         if ($module->deletioninprogress == '1') {
-            if ($onlygradable) {
-                // Check if the module being deleted is in the list of course modules with grade items.
-                foreach ($coursegradeitems as $coursegradeitem) {
-                    if ($coursegradeitem->itemmodule == $module->modname && $coursegradeitem->iteminstance == $module->instance) {
-                        // The module being deleted is within the gradable  modules.
-                        return true;
-                    }
-                }
-            } else {
-                return true;
-            }
+            return true;
         }
     }
     return false;
@@ -2508,6 +2488,15 @@ function create_course($data, $editoroptions = NULL) {
         core_tag_tag::set_item_tags('core', 'course', $course->id, context_course::instance($course->id), $data->tags);
     }
 
+    // Save custom fields if there are any of them in the form.
+    $handler = core_course\customfield\course_handler::create();
+    // Make sure to set the handler's parent context first.
+    $coursecatcontext = context_coursecat::instance($category->id);
+    $handler->set_parent_context($coursecatcontext);
+    // Save the custom field data.
+    $data->id = $course->id;
+    $handler->instance_form_save($data, true);
+
     return $course;
 }
 
@@ -2591,6 +2580,10 @@ function update_course($data, $editoroptions = NULL) {
             $data->newsitems = 0;
         }
     }
+
+    // Update custom fields if there are any of them in the form.
+    $handler = core_course\customfield\course_handler::create();
+    $handler->instance_form_save($data);
 
     // Update with the new data
     $DB->update_record('course', $data);
@@ -4001,6 +3994,7 @@ function course_get_user_administration_options($course, $context) {
         $options->outcomes = !empty($CFG->enableoutcomes) && has_capability('moodle/course:update', $context);
         $options->badges = !empty($CFG->enablebadges);
         $options->import = has_capability('moodle/restore:restoretargetimport', $context);
+        $options->publish = !empty($CFG->enablecoursepublishing) && has_capability('moodle/course:publish', $context);
         $options->reset = has_capability('moodle/course:reset', $context);
         $options->roles = has_capability('moodle/role:switchroles', $context);
     } else {
@@ -4577,7 +4571,7 @@ function course_get_recent_courses(int $userid = null, int $limit = 0, int $offs
     }
 
     $basefields = array('id', 'idnumber', 'summary', 'summaryformat', 'startdate', 'enddate', 'category',
-            'shortname', 'fullname', 'timeaccess', 'component', 'visible');
+            'shortname', 'fullname', 'timeaccess', 'component');
 
     $sort = trim($sort);
     if (empty($sort)) {

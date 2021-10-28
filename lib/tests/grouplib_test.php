@@ -1123,7 +1123,7 @@ class core_grouplib_testcase extends advanced_testcase {
      * Tests for groups_user_groups_visible.
      */
     public function test_groups_user_groups_visible() {
-        global $DB;
+        global $CFG, $DB;
 
         $generator = $this->getDataGenerator();
         $this->resetAfterTest();
@@ -1172,8 +1172,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $result = groups_user_groups_visible($course, $user2->id);
         $this->assertTrue($result);
 
-        $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user2->id, $cm);
+        $result = groups_user_groups_visible($course, $user2->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1191,8 +1190,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $result = groups_user_groups_visible($course, $user2->id);
         $this->assertTrue($result);
 
-        $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user2->id, $cm);
+        $result = groups_user_groups_visible($course, $user2->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1230,7 +1228,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $this->assertTrue($result);
 
         $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user2->id, $cm);
+        $result = groups_user_groups_visible($course, $user2->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1298,8 +1296,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $result = groups_user_groups_visible($course, $user4->id);
         $this->assertTrue($result);
 
-        $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user4->id, $cm);
+        $result = groups_user_groups_visible($course, $user4->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1317,8 +1314,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $result = groups_user_groups_visible($course, $user4->id);
         $this->assertTrue($result);
 
-        $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user4->id, $cm);
+        $result = groups_user_groups_visible($course, $user4->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1326,7 +1322,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $this->assertTrue($result); // Cm with separate groups.
 
         $cm->groupmode = SEPARATEGROUPS;
-        $result = groups_user_groups_visible($course, $user4->id, $cm);
+        $result = groups_user_groups_visible($course, $user4->id);
         $this->assertTrue($result); // Cm with visible groups.
 
         // Visible groups, forced.
@@ -1356,7 +1352,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $this->assertTrue($result);
 
         $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user4->id, $cm);
+        $result = groups_user_groups_visible($course, $user4->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1428,8 +1424,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $result = groups_user_groups_visible($course, $user1->id);
         $this->assertTrue($result); // Requesting all groups.
 
-        $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user1->id, $cm);
+        $result = groups_user_groups_visible($course, $user1->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1451,8 +1446,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $result = groups_user_groups_visible($course, $user1->id);
         $this->assertTrue($result); // Requesting all groups.
 
-        $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user1->id, $cm);
+        $result = groups_user_groups_visible($course, $user1->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;
@@ -1462,7 +1456,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $this->assertTrue($result); // Cm with separate groups.
 
         $cm->groupmode = SEPARATEGROUPS;
-        $result = groups_user_groups_visible($course, $user1->id, $cm);
+        $result = groups_user_groups_visible($course, $user1->id);
         $this->assertTrue($result); // Cm with visible groups.
 
         // Visible groups, forced.
@@ -1498,7 +1492,7 @@ class core_grouplib_testcase extends advanced_testcase {
         $this->assertTrue($result); // Requesting all groups.
 
         $cm->groupmode = NOGROUPS;
-        $result = groups_user_groups_visible($course, $user1->id, $cm);
+        $result = groups_user_groups_visible($course, $user1->id);
         $this->assertTrue($result); // Cm with no groups.
 
         $cm->groupmode = SEPARATEGROUPS;

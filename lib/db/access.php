@@ -181,6 +181,20 @@ $capabilities = array(
         'clonepermissionsfrom' =>  'moodle/backup:backupcourse'
     ),
 
+    'moodle/backup:backuptargethub' => array(
+
+        'riskbitmask' => RISK_SPAM | RISK_PERSONAL | RISK_XSS,
+
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        ),
+
+        'clonepermissionsfrom' =>  'moodle/backup:backupcourse'
+    ),
+
     'moodle/backup:backuptargetimport' => array(
 
         'riskbitmask' => RISK_SPAM | RISK_PERSONAL | RISK_XSS,
@@ -295,6 +309,20 @@ $capabilities = array(
             'editingteacher' => CAP_ALLOW,
             'manager' => CAP_ALLOW
         ),
+    ),
+
+    'moodle/restore:restoretargethub' => array(
+
+        'riskbitmask' => RISK_SPAM | RISK_PERSONAL | RISK_XSS,
+
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW
+        ),
+
+        'clonepermissionsfrom' =>  'moodle/restore:restorecourse'
     ),
 
     'moodle/restore:restoretargetimport' => array(
@@ -705,6 +733,16 @@ $capabilities = array(
         'clonepermissionsfrom' => 'moodle/category:update'
     ),
 
+    'moodle/category:viewcourselist' => array(
+
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_COURSECAT,
+        'archetypes' => array(
+            'guest' => CAP_ALLOW,
+            'user' => CAP_ALLOW,
+        )
+    ),
+
     'moodle/category:viewhiddencategories' => array(
 
         'captype' => 'read',
@@ -996,6 +1034,26 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         ),
         'clonepermissionsfrom' => 'moodle/course:update'
+    ),
+
+    'moodle/course:changelockedcustomfields' => array(
+
+        'riskbitmask' => RISK_SPAM,
+
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_COURSE,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        ),
+    ),
+
+    'moodle/course:configurecustomfields' => array(
+
+        'riskbitmask' => RISK_SPAM,
+
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'clonepermissionsfrom' => 'moodle/site:config'
     ),
 
     'moodle/course:renameroles' => array(
@@ -1930,6 +1988,15 @@ $capabilities = array(
             'manager' => CAP_ALLOW
         )
     ),
+     'moodle/course:publish' => array(
+
+        'captype' => 'write',
+        'riskbitmask' => RISK_SPAM | RISK_PERSONAL,
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'manager' => CAP_ALLOW
+        )
+    ),
     'moodle/course:markcomplete' => array(
         'captype' => 'write',
         'contextlevel' => CONTEXT_COURSE,
@@ -2412,4 +2479,12 @@ $capabilities = array(
             'user' => CAP_ALLOW,
         ],
     ],
+
+    'moodle/analytics:listowninsights' => array(
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => array(
+            'user' => CAP_ALLOW
+        )
+    ),
 );

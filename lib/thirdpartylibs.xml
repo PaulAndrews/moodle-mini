@@ -130,7 +130,7 @@
     <location>tcpdf</location>
     <name>TCPDF</name>
     <license>LGPL</license>
-    <version>6.2.26</version>
+    <version>6.2.13</version>
     <licenseversion>3</licenseversion>
   </library>
   <library>
@@ -322,5 +322,12 @@
     <name>Generate tiling SVG patterns from a string</name>
     <license>MIT</license>
     <version>1.1.1</version>
+  </library>
+  <library>
+    <location>php-jwt</location>
+    <name>A simple library to encode and decode JSON Web Tokens (JWT) in PHP, conforming to RFC 7519</name>
+    <license>BSD</license>
+    <version>5.0.0</version>
+    <licenseversion>3-Clause</licenseversion>
   </library>
 </libraries>

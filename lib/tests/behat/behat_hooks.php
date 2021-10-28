@@ -110,6 +110,11 @@ class behat_hooks extends behat_base {
     protected static $runningsuite = '';
 
     /**
+     * @var array Array (with tag names in keys) of all tags in current scenario.
+     */
+    protected static $scenariotags;
+
+    /**
      * Hook to capture BeforeSuite event so as to give access to moodle codebase.
      * This will try and catch any exception and exists if anything fails.
      *
@@ -317,7 +322,6 @@ class behat_hooks extends behat_base {
 
         // Register behat selectors for theme, if suite is changed. We do it for every suite change.
         if ($suitename !== self::$runningsuite) {
-            self::$runningsuite = $suitename;
             behat_context_helper::set_environment($scope->getEnvironment());
 
             // We need the Mink session to do it and we do it only before the first scenario.
@@ -338,12 +342,6 @@ class behat_hooks extends behat_base {
 
             $this->getSession()->getSelectorsHandler()->registerSelector('named_partial', new $namedpartialclass());
             $this->getSession()->getSelectorsHandler()->registerSelector('named_exact', new $namedexactclass());
-
-            // Register component named selectors.
-            foreach (\core_component::get_component_names() as $component) {
-                $this->register_component_selectors_for_component($component);
-            }
-
         }
 
         // Reset mink session between the scenarios.
@@ -375,6 +373,7 @@ class behat_hooks extends behat_base {
         // Set the theme if not default.
         if ($suitename !== "default") {
             set_config('theme', $suitename);
+            self::$runningsuite = $suitename;
         }
 
         // Reset the scenariorunning variable to ensure that Step 0 occurs.
@@ -382,6 +381,14 @@ class behat_hooks extends behat_base {
 
         // Run all test with medium (1024x768) screen size, to avoid responsive problems.
         $this->resize_window('medium');
+
+        // Set up the tags for current scenario.
+        self::fetch_tags_for_scenario($scope);
+
+        // If scenario requires the Moodle app to be running, set this up.
+        if ($this->has_tag('app')) {
+            $this->execute('behat_app::start_scenario');
+        }
     }
 
     /**
@@ -389,7 +396,7 @@ class behat_hooks extends behat_base {
      * Yes, this is in a strange location and should be in the BeforeScenario hook, but failures in the test setUp lead
      * to the test being incorrectly marked as skipped with no way to force the test to be failed.
      *
-     * @param BeforeStepScope $scope
+     * @param   BeforeStepScope $scope
      * @BeforeStep
      */
     public function before_step(BeforeStepScope $scope) {
@@ -418,9 +425,31 @@ class behat_hooks extends behat_base {
                         new ExpectationException($message, $session)
                     );
 
+                self::$initprocessesfinished = true;
             }
             $this->scenariorunning = true;
         }
+    }
+
+    /**
+     * Sets up the tags for the current scenario.
+     *
+     * @param \Behat\Behat\Hook\Scope\BeforeScenarioScope $scope Scope
+     */
+    protected static function fetch_tags_for_scenario(\Behat\Behat\Hook\Scope\BeforeScenarioScope $scope) {
+        self::$scenariotags = array_flip(array_merge(
+            $scope->getScenario()->getTags(),
+            $scope->getFeature()->getTags()
+        ));
+    }
+
+    /**
+     * Gets the tags for the current scenario
+     *
+     * @return array Array where key is tag name and value is an integer
+     */
+    public static function get_tags_for_scenario() : array {
+        return self::$scenariotags;
     }
 
     /**
@@ -471,7 +500,11 @@ class behat_hooks extends behat_base {
             throw new coding_exception("Step '" . $scope->getStep()->getText() . "'' is undefined.");
         }
 
-        $isfailed = $scope->getTestResult()->getResultCode() === Behat\Testwork\Tester\Result\TestResult::FAILED;
+        // Save the page content if the step failed.
+        if (!empty($CFG->behat_faildump_path) &&
+            $scope->getTestResult()->getResultCode() === Behat\Testwork\Tester\Result\TestResult::FAILED) {
+            $this->take_contentdump($scope);
+        }
 
         // Abort any open transactions to prevent subsequent tests hanging.
         // This does the same as abort_all_db_transactions(), but doesn't call error_log() as we don't
@@ -483,28 +516,15 @@ class behat_hooks extends behat_base {
             }
         }
 
-        if ($isfailed && !empty($CFG->behat_faildump_path)) {
-            // Save the page content (html).
-            $this->take_contentdump($scope);
-
-            if ($this->running_javascript()) {
-                // Save a screenshot.
-                $this->take_screenshot($scope);
-            }
-        }
-
-        if ($isfailed && !empty($CFG->behat_pause_on_fail)) {
-            $exception = $scope->getTestResult()->getException();
-            $message = "<colour:lightRed>Scenario failed. ";
-            $message .= "<colour:lightYellow>Paused for inspection. Press <colour:lightRed>Enter/Return<colour:lightYellow> to continue.<newline>";
-            $message .= "<colour:lightRed>Exception follows:<newline>";
-            $message .= trim($exception->getMessage());
-            behat_util::pause($this->getSession(), $message);
-        }
-
         // Only run if JS.
         if (!$this->running_javascript()) {
             return;
+        }
+
+        // Save a screenshot if the step failed.
+        if (!empty($CFG->behat_faildump_path) &&
+            $scope->getTestResult()->getResultCode() === Behat\Testwork\Tester\Result\TestResult::FAILED) {
+            $this->take_screenshot($scope);
         }
 
         try {
@@ -680,50 +700,6 @@ class behat_hooks extends behat_base {
     protected static function is_first_scenario() {
         return !(self::$initprocessesfinished);
     }
-
-    /**
-     * Register a set of component selectors.
-     *
-     * @param string $component
-     */
-    public function register_component_selectors_for_component(string $component) {
-        $context = behat_context_helper::get_component_context($component);
-
-        if ($context === null) {
-            return;
-        }
-
-        $namedpartial = $this->getSession()->getSelectorsHandler()->getSelector('named_partial');
-        $namedexact = $this->getSession()->getSelectorsHandler()->getSelector('named_exact');
-
-        // Replacements must come before selectors as they are used in the selectors.
-        foreach ($context->get_named_replacements() as $replacement) {
-            $namedpartial->register_replacement($component, $replacement);
-            $namedexact->register_replacement($component, $replacement);
-        }
-
-        foreach ($context->get_partial_named_selectors() as $selector) {
-            $namedpartial->register_component_selector($component, $selector);
-        }
-
-        foreach ($context->get_exact_named_selectors() as $selector) {
-            $namedexact->register_component_selector($component, $selector);
-        }
-
-    }
-
-    /**
-     * Mark the first step as having been completed.
-     *
-     * This must be the last BeforeStep hook in the setup.
-     *
-     * @param BeforeStepScope $scope
-     * @BeforeStep
-     */
-    public function first_step_setup_complete(BeforeStepScope $scope) {
-        self::$initprocessesfinished = true;
-    }
-
 }
 
 /**

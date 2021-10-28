@@ -23,6 +23,7 @@
  */
 
 $string['actual'] = 'Actual';
+$string['addpersistent'] = 'Add mandatory persistent fields';
 $string['aftertable'] = 'After table:';
 $string['back'] = 'Back';
 $string['backtomainview'] = 'Back to main';
@@ -33,7 +34,7 @@ $string['confirmdeleteindex'] = 'Are you absolutely sure that you want to delete
 $string['confirmdeletekey'] = 'Are you absolutely sure that you want to delete the key:';
 $string['confirmdeletetable'] = 'Are you absolutely sure that you want to delete the table:';
 $string['confirmdeletexmlfile'] = 'Are you absolutely sure that you want to delete the file:';
-$string['confirmcheckbigints'] = 'This functionality will search for <a href="https://tracker.moodle.org/browse/MDL-11038">potential wrong integer fields</a> in your Moodle server, generating (but not executing!) automatically the needed SQL statements to have all the integers in your DB properly defined.
+$string['confirmcheckbigints'] = 'This functionality will search for <a href="http://tracker.moodle.org/browse/MDL-11038">potential wrong integer fields</a> in your Moodle server, generating (but not executing!) automatically the needed SQL statements to have all the integers in your DB properly defined.
 
 Once generated you can copy such statements and execute them safely with your favourite SQL interface (don\'t forget to backup your data before doing that).
 
@@ -59,7 +60,7 @@ Once generated you can copy such statements and execute them safely with your fa
 It\'s highly recommended to be running the latest (+ version) available of your Moodle release before executing the search of missing indexes.
 
 This functionality doesn\'t perform any action against the DB (just reads from it), so can be safely executed at any moment.';
-$string['confirmcheckoraclesemantics'] = 'This functionality will search for <a href="https://tracker.moodle.org/browse/MDL-29322">Oracle varchar2 columns using BYTE semantics</a> in your Moodle server, generating (but not executing!) automatically the needed SQL statements to have all the columns converted to use CHAR semantics instead (better for cross-db compatibility and increased contents max. length).
+$string['confirmcheckoraclesemantics'] = 'This functionality will search for <a href="http://tracker.moodle.org/browse/MDL-29322">Oracle varchar2 columns using BYTE semantics</a> in your Moodle server, generating (but not executing!) automatically the needed SQL statements to have all the columns converted to use CHAR semantics instead (better for cross-db compatibility and increased contents max. length).
 
 Once generated you can copy such statements and execute them safely with your favourite SQL interface (don\'t forget to backup your data before doing that).
 
@@ -139,7 +140,7 @@ $string['incorrecttablename'] = 'Incorrect table name';
 $string['key'] = 'Key';
 $string['keynameempty'] = 'The key name cannot be empty';
 $string['keys'] = 'Keys';
-$string['listreservedwords'] = 'List of reserved words<br />(used to keep <a href="https://docs.moodle.org/en/XMLDB_reserved_words" target="_blank">XMLDB reserved words</a> updated)';
+$string['listreservedwords'] = 'List of Reserved Words<br />(used to keep <a href="http://docs.moodle.org/en/XMLDB_reserved_words" target="_blank">XMLDB_reserved_words</a> updated)';
 $string['load'] = 'Load';
 $string['main_view'] = 'Main view';
 $string['masterprimaryuniqueordernomatch'] = 'The fields in your foreign key must be listed in the same order as they are listed in the UNIQUE KEY on the referenced table.';
@@ -169,6 +170,9 @@ $string['numberincorrectwholepart'] = 'Too big whole number part for number fiel
 $string['pendingchanges'] = 'Note: You have performed changes to this file. They can be saved at any moment.';
 $string['pendingchangescannotbesaved'] = 'There are changes in this file but they cannot be saved! Please verify that both the directory and the "install.xml" within it have write permissions for the web server.';
 $string['pendingchangescannotbesavedreload'] = 'There are changes in this file but they cannot be saved! Please verify that both the directory and the "install.xml" within it have write permissions for the web server. Then reload this page and you should be able to save those changes.';
+$string['persistentfieldsconfirm'] = 'Do you want to add the following fields: ';
+$string['persistentfieldscomplete'] = 'The following fields have been added: ';
+$string['persistentfieldsexist'] = 'The following fields already exist: ';
 $string['pluginname'] = 'XMLDB editor';
 $string['primarykeyonlyallownotnullfields'] = 'Primary keys cannot be null';
 $string['reserved'] = 'Reserved';
