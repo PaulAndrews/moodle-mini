@@ -24,7 +24,9 @@ Feature: In a lesson activity, students can not re-attempt a question more than 
       | retake                   | 1                       |
       | minquestions             | 3                       |
       | section                  | 1                       |
-    And I am on the "Test lesson name" "lesson activity" page logged in as teacher1
+    And I log in as "teacher1"
+    And I am on "Course 1" course homepage with editing mode on
+    And I follow "Test lesson name"
     And I follow "Add a content page"
     And I set the following fields to these values:
       | Page title | First page name |
@@ -92,7 +94,9 @@ Feature: In a lesson activity, students can not re-attempt a question more than 
     And I log out
 
   Scenario: Check that we can leave a quiz and when we re-enter we can not re-attempt the question again
-    Given I am on the "Test lesson name" "lesson activity" page logged in as student1
+    Given I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test lesson name"
     And I should see "First page contents"
     And I press "Next page"
     And I should see "The earth is round"
@@ -100,7 +104,8 @@ Feature: In a lesson activity, students can not re-attempt a question more than 
       | False| 1 |
     And I press "Submit"
     And I should see "Wrong"
-    And I am on the "Test lesson name" "lesson activity" page
+    And I am on "Course 1" course homepage
+    And I follow "Test lesson name"
     And I should see "Do you want to start at the last page you saw?"
     And I click on "No" "link" in the "#page-content" "css_element"
     And I should see "First page contents"
@@ -113,7 +118,9 @@ Feature: In a lesson activity, students can not re-attempt a question more than 
 
   @javascript @_bug_phantomjs
   Scenario: Check that we can not click back on the browser at the last quiz result page and re-attempt the last question to get full marks
-    Given I am on the "Test lesson name" "lesson activity" page logged in as student1
+    Given I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test lesson name"
     And I should see "First page contents"
     And I press "Next page"
     And I should see "The earth is round"
@@ -155,7 +162,9 @@ Feature: In a lesson activity, students can not re-attempt a question more than 
 
   @javascript
   Scenario: Check that we can not click back on the browser and re-attempt a question
-    Given I am on the "Test lesson name" "lesson activity" page logged in as student1
+    Given I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test lesson name"
     And I should see "First page contents"
     And I press "Next page"
     And I should see "The earth is round"

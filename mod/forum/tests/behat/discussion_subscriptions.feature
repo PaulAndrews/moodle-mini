@@ -34,7 +34,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject two |
       | Message | Test post message two |
     And I log out
-    When I am on the "Test forum name" "forum activity" page logged in as student1
+    When I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     Then I can subscribe to this forum
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
@@ -79,7 +81,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject two |
       | Message | Test post message two |
     And I log out
-    When I am on the "Test forum name" "forum activity" page logged in as student1
+    When I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     Then I can unsubscribe from this forum
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
@@ -124,7 +128,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject two |
       | Message | Test post message two |
     And I log out
-    And I am on the "Test forum name" "forum activity" page logged in as student1
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I can subscribe to this forum
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
@@ -133,13 +139,17 @@ Feature: A user can control their own subscription preferences for a discussion
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
     And I log out
-    And I am on the "Test forum name" "forum activity" page logged in as admin
+    And I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I navigate to "Edit settings" in current page administration
     And I set the following fields to these values:
       | Subscription mode | Auto subscription |
     And I press "Save and return to course"
     And I log out
-    And I am on the "Test forum name" "forum activity" page logged in as student1
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I can unsubscribe from this forum
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
@@ -167,7 +177,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject two |
       | Message | Test post message two |
     And I log out
-    And I am on the "Test forum name" "forum activity" page logged in as student1
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I can subscribe to this forum
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
@@ -177,13 +189,16 @@ Feature: A user can control their own subscription preferences for a discussion
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
     And I log out
     And I log in as "admin"
-    And I am on the "Test forum name" "forum activity" page
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I navigate to "Edit settings" in current page administration
     And I set the following fields to these values:
       | Subscription mode | Auto subscription |
     And I press "Save and return to course"
     And I log out
-    And I am on the "Test forum name" "forum activity" page logged in as student1
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I can unsubscribe from this forum
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
@@ -210,7 +225,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject two |
       | Message | Test post message two |
     And I log out
-    When I am on the "Test forum name" "forum activity" page logged in as student1
+    When I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I should see "Subscribe to this forum"
     And I reply "Test post subject one" post from "Test forum name" forum with:
       | Subject | Reply 1 to discussion 1 |
@@ -220,7 +237,7 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Reply 1 to discussion 1 |
       | Message | Discussion contents 1, second message |
       | Discussion subscription | 0 |
-    And I am on the "Test forum name" "forum activity" page
+    And I follow "Test forum name"
     Then "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
     And I follow "Test post subject one"
@@ -248,7 +265,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject two |
       | Message | Test post message two |
     And I log out
-    When I am on the "Test forum name" "forum activity" page logged in as student1
+    When I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I follow "Test forum name"
     And I should see "Unsubscribe from this forum"
     And I reply "Test post subject one" post from "Test forum name" forum with:
       | Subject | Reply 1 to discussion 1 |
@@ -258,24 +277,23 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Reply 1 to discussion 1 |
       | Message | Discussion contents 1, second message |
       | Discussion subscription | 0 |
-    And I am on the "Test forum name" "forum activity" page
+    And I follow "Test forum name"
     Then "Unsubscribe from this discussion" "checkbox" should exist in the "Test post subject one" "table_row"
     And "Subscribe to this discussion" "checkbox" should exist in the "Test post subject two" "table_row"
     And I follow "Test post subject one"
     And I follow "Reply"
     And the field "Discussion subscription" matches value "Send me notifications of new posts in this discussion"
-    And I am on the "Test forum name" "forum activity" page
+    And I follow "Test forum name"
     And I follow "Test post subject two"
     And I follow "Reply"
     And the field "Discussion subscription" matches value "I don't want to be notified of new posts in this discussion"
 
   Scenario: A guest should not be able to subscribe to a discussion
-    Given I am on site homepage
+    Given the following "activities" exist:
+      | activity    | name            | intro                  | course               | section | idnumber  | type    |
+      | forum       | Test forum name | Test forum description | Acceptance test site | 1       | forum1    | general |
+    And I am on site homepage
     And I turn editing mode on
-    And I add a "Forum" to section "1" and I fill the form with:
-     | Forum name        | Test forum name |
-     | Forum type        | Standard forum for general use |
-     | Description       | Test forum description |
     And I add a new discussion to "Test forum name" forum with:
      | Subject | Test post subject one |
      | Message | Test post message one |
@@ -289,12 +307,11 @@ Feature: A user can control their own subscription preferences for a discussion
     And "Unsubscribe from this discussion" "checkbox" should not exist
 
   Scenario: A user who is not logged in should not be able to subscribe to a discussion
-    Given I am on site homepage
+    Given the following "activities" exist:
+      | activity    | name            | intro                  | course               | section | idnumber  | type    |
+      | forum       | Test forum name | Test forum description | Acceptance test site | 1       | forum1    | general |
+    And I am on site homepage
     And I turn editing mode on
-    And I add a "Forum" to section "1" and I fill the form with:
-     | Forum name        | Test forum name |
-     | Forum type        | Standard forum for general use |
-     | Description       | Test forum description |
     And I add a new discussion to "Test forum name" forum with:
      | Subject | Test post subject one |
      | Message | Test post message one |
@@ -320,7 +337,9 @@ Feature: A user can control their own subscription preferences for a discussion
       | Subject | Test post subject one |
       | Message | Test post message one |
     And I log out
-    When I am on the "Test forum name" "forum activity" page logged in as student1
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    When I follow "Test forum name"
     Then "Subscribe to this forum" "link" should exist in current page administration
     And I follow "Test post subject one"
     And "You are not subscribed to this discussion. Click to subscribe" "link" should exist

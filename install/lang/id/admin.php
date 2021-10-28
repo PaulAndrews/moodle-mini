@@ -40,5 +40,4 @@ $string['cliunknowoption'] = 'Opsi tidak dikenali :
 Silakan gunakan opsi --help';
 $string['cliyesnoprompt'] = 'ketik y (Ya) atau t (Tidak)';
 $string['environmentrequireinstall'] = 'harus dipasang dan diaktifkan';
-$string['environmentrequireversion'] = 'versi {$a->needed} diperlukan dan Anda menjalankan {$a->current}';
 $string['upgradekeyset'] = 'Tingkatkan kunci (biarkan kosong untuk tidak mengaturnya)';

@@ -2529,11 +2529,6 @@ function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring
         $filename = rawurlencode($filename);
     }
 
-    // Make sure we force download of SVG files for security reasons (https://digi.ninja/blog/svg_xss.php).
-    if (file_is_svg_image_from_mimetype($mimetype)) {
-        $forcedownload = true;
-    }
-
     if ($forcedownload) {
         header('Content-Disposition: attachment; filename="'.$filename.'"');
 
@@ -2594,7 +2589,7 @@ function send_file($path, $filename, $lifetime = null , $filter=0, $pathisstring
 
     } else {
         // Try to put the file through filters
-        if ($mimetype == 'text/html' || $mimetype == 'application/xhtml+xml' || file_is_svg_image_from_mimetype($mimetype)) {
+        if ($mimetype == 'text/html' || $mimetype == 'application/xhtml+xml') {
             $options = new stdClass();
             $options->noclean = true;
             $options->nocache = true; // temporary workaround for MDL-5136
@@ -3024,16 +3019,6 @@ function file_merge_draft_area_into_draft_area($getfromdraftid, $mergeintodrafti
 }
 
 /**
- * Attempt to determine whether the specified mime-type is an SVG image or not.
- *
- * @param string $mimetype Mime-type
- * @return bool True if it is an SVG file
- */
-function file_is_svg_image_from_mimetype(string $mimetype): bool {
-    return preg_match('|^image/svg|', $mimetype);
-}
-
-/**
  * RESTful cURL class
  *
  * This is a wrapper class for curl, it is quite easy to use:
@@ -3078,7 +3063,7 @@ class curl {
     public  $error;
     /** @var int error code */
     public  $errno;
-    /** @var bool Perform redirects at PHP level instead of relying on native cURL functionality. Always true now. */
+    /** @var bool use workaround for open_basedir restrictions, to be changed from unit tests only! */
     public $emulateredirects = null;
 
     /** @var array cURL options */
@@ -3175,13 +3160,9 @@ class curl {
             $this->proxy = false;
         }
 
-        // All redirects are performed at PHP level now and each one is checked against blocked URLs rules. We do not
-        // want to let cURL naively follow the redirect chain and visit every URL for security reasons. Even when the
-        // caller explicitly wants to ignore the security checks, we would need to fall back to the original
-        // implementation and use emulated redirects if open_basedir is in effect to avoid the PHP warning
-        // "CURLOPT_FOLLOWLOCATION cannot be activated when in safe_mode or an open_basedir". So it is better to simply
-        // ignore this property and always handle redirects at this PHP wrapper level and not inside the native cURL.
-        $this->emulateredirects = true;
+        if (!isset($this->emulateredirects)) {
+            $this->emulateredirects = ini_get('open_basedir');
+        }
 
         // Curl security setup. Allow injection of a security helper, but if not found, default to the core helper.
         if (isset($settings['securityhelper']) && $settings['securityhelper'] instanceof \core\files\curl_security_helper_base) {
@@ -3490,8 +3471,8 @@ class curl {
 
         // Set options.
         foreach($this->options as $name => $val) {
-            if ($name === 'CURLOPT_FOLLOWLOCATION') {
-                // All the redirects are emulated at PHP level.
+            if ($name === 'CURLOPT_FOLLOWLOCATION' and $this->emulateredirects) {
+                // The redirects are emulated elsewhere.
                 curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 0);
                 continue;
             }
@@ -3646,6 +3627,51 @@ class curl {
     }
 
     /**
+     * check_securityhelper_blocklist.
+     * Checks whether the given URL is blocked by checking both plugin's security helpers
+     * and core curl security helper or any curl security helper that passed to curl class constructor.
+     * If ignoresecurity is set to true, skip checking and consider the url is not blocked.
+     * This augments all installed plugin's security helpers if there is any.
+     *
+     * @param string $url the url to check.
+     * @return string - an error message if URL is blocked or null if URL is not blocked.
+     */
+    protected function check_securityhelper_blocklist(string $url): ?string {
+
+        // If curl security is not enabled, do not proceed.
+        if ($this->ignoresecurity) {
+            return null;
+        }
+
+        // Augment all installed plugin's security helpers if there is any.
+        // The plugin's function has to be defined as plugintype_pluginname_security_helper in pluginname/lib.php file.
+        $plugintypes = get_plugins_with_function('curl_security_helper');
+
+        // If any of the security helper's function returns true, treat as URL is blocked.
+        foreach ($plugintypes as $plugins) {
+            foreach ($plugins as $pluginfunction) {
+                // Get curl security helper object from plugin lib.php.
+                $pluginsecurityhelper = $pluginfunction();
+                if ($pluginsecurityhelper instanceof \core\files\curl_security_helper_base) {
+                    if ($pluginsecurityhelper->url_is_blocked($url)) {
+                        $this->error = $pluginsecurityhelper->get_blocked_url_string();
+                        return $this->error;
+                    }
+                }
+            }
+        }
+
+        // Check if the URL is blocked in core curl_security_helper or
+        // curl security helper that passed to curl class constructor.
+        if ($this->securityhelper->url_is_blocked($url)) {
+            $this->error = $this->securityhelper->get_blocked_url_string();
+            return $this->error;
+        }
+
+        return null;
+    }
+
+    /**
      * Single HTTP Request
      *
      * @param string $url The URL to request
@@ -3663,15 +3689,10 @@ class curl {
             }
         }
 
-        if (empty($this->emulateredirects)) {
-            // Just in case someone had tried to explicitly disable emulated redirects in legacy code.
-            debugging('Attempting to disable emulated redirects has no effect any more!', DEBUG_DEVELOPER);
-        }
-
-        // If curl security is enabled, check the URL against the list of blocked URLs before calling the first curl_exec.
-        if (!$this->ignoresecurity && $this->securityhelper->url_is_blocked($url)) {
-            $this->error = $this->securityhelper->get_blocked_url_string();
-            return $this->error;
+        // This will only check the base url. In the case of redirects, the blocking check is also after the curl_exec.
+        $urlisblocked = $this->check_securityhelper_blocklist($url);
+        if (!is_null($urlisblocked)) {
+            return $urlisblocked;
         }
 
         // Set the URL as a curl option.
@@ -3691,14 +3712,17 @@ class curl {
         $this->errno = curl_errno($curl);
         // Note: $this->response and $this->rawresponse are filled by $hits->formatHeader callback.
 
+        // In the case of redirects (which curl blindly follows), check the post-redirect URL against the list of blocked list too.
         if (intval($this->info['redirect_count']) > 0) {
-            // For security reasons we do not allow the cURL handle to follow redirects on its own.
-            // See setting CURLOPT_FOLLOWLOCATION in {@see self::apply_opt()} method.
-            throw new coding_exception('Internal cURL handle should never follow redirects on its own!',
-                'Reported number of redirects: ' . $this->info['redirect_count']);
+            $urlisblocked = $this->check_securityhelper_blocklist($this->info['url']);
+            if (!is_null($urlisblocked)) {
+                $this->reset_request_state_vars();
+                curl_close($curl);
+                return $urlisblocked;
+            }
         }
 
-        if ($this->options['CURLOPT_FOLLOWLOCATION'] && $this->info['http_code'] != 200) {
+        if ($this->emulateredirects and $this->options['CURLOPT_FOLLOWLOCATION'] and $this->info['http_code'] != 200) {
             $redirects = 0;
 
             while($redirects <= $this->options['CURLOPT_MAXREDIRS']) {
@@ -3732,12 +3756,6 @@ class curl {
                 if (isset($this->info['redirect_url'])) {
                     if (preg_match('|^https?://|i', $this->info['redirect_url'])) {
                         $redirecturl = $this->info['redirect_url'];
-                    } else {
-                        // Emulate CURLOPT_REDIR_PROTOCOLS behaviour which we have set to (CURLPROTO_HTTP | CURLPROTO_HTTPS) only.
-                        $this->errno = CURLE_UNSUPPORTED_PROTOCOL;
-                        $this->error = 'Redirect to a URL with unsuported protocol: ' . $this->info['redirect_url'];
-                        curl_close($curl);
-                        return $this->error;
                     }
                 }
                 if (!$redirecturl) {
@@ -3765,13 +3783,6 @@ class curl {
                             $redirecturl = dirname($current).'/'.$redirecturl;
                         }
                     }
-                }
-
-                if (!$this->ignoresecurity && $this->securityhelper->url_is_blocked($redirecturl)) {
-                    $this->reset_request_state_vars();
-                    $this->error = $this->securityhelper->get_blocked_url_string();
-                    curl_close($curl);
-                    return $this->error;
                 }
 
                 curl_setopt($curl, CURLOPT_URL, $redirecturl);
@@ -4622,15 +4633,33 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null, $offlin
 
             $userid = $context->instanceid;
 
-            if (!empty($CFG->forceloginforprofiles)) {
-                require_once("{$CFG->dirroot}/user/lib.php");
+            if ($USER->id == $userid) {
+                // always can access own
 
+            } else if (!empty($CFG->forceloginforprofiles)) {
                 require_login();
 
-                // Verify the current user is able to view the profile of the supplied user anywhere.
-                $user = core_user::get_user($userid);
-                if (!user_can_view_profile($user, null, $context)) {
+                if (isguestuser()) {
                     send_file_not_found();
+                }
+
+                // we allow access to site profile of all course contacts (usually teachers)
+                if (!has_coursecontact_role($userid) && !has_capability('moodle/user:viewdetails', $context)) {
+                    send_file_not_found();
+                }
+
+                $canview = false;
+                if (has_capability('moodle/user:viewdetails', $context)) {
+                    $canview = true;
+                } else {
+                    $courses = enrol_get_my_courses();
+                }
+
+                while (!$canview && count($courses) > 0) {
+                    $course = array_shift($courses);
+                    if (has_capability('moodle/user:viewdetails', context_course::instance($course->id))) {
+                        $canview = true;
+                    }
                 }
             }
 
@@ -4652,14 +4681,23 @@ function file_pluginfile($relativepath, $forcedownload, $preview = null, $offlin
             }
 
             if (!empty($CFG->forceloginforprofiles)) {
-                require_once("{$CFG->dirroot}/user/lib.php");
-
                 require_login();
+                if (isguestuser()) {
+                    print_error('noguest');
+                }
 
-                // Verify the current user is able to view the profile of the supplied user in current course.
-                $user = core_user::get_user($userid);
-                if (!user_can_view_profile($user, $course, $usercontext)) {
-                    send_file_not_found();
+                //TODO: review this logic of user profile access prevention
+                if (!has_coursecontact_role($userid) and !has_capability('moodle/user:viewdetails', $usercontext)) {
+                    print_error('usernotavailable');
+                }
+                if (!has_capability('moodle/user:viewdetails', $context) && !has_capability('moodle/user:viewdetails', $usercontext)) {
+                    print_error('cannotviewprofile');
+                }
+                if (!is_enrolled($context, $userid)) {
+                    print_error('notenrolledprofile');
+                }
+                if (groups_get_course_groupmode($course) == SEPARATEGROUPS and !has_capability('moodle/site:accessallgroups', $context)) {
+                    print_error('groupnotamember');
                 }
             }
 

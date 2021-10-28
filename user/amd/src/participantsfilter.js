@@ -17,6 +17,7 @@
  * Participants filter managemnet.
  *
  * @module     core_user/participants_filter
+ * @package    core_user
  * @copyright  2020 Andrew Nicols <andrew@nicols.co.uk>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -336,8 +337,8 @@ export const init = participantsRegionId => {
 
         if (filters.length === 1) {
             filterSet.querySelector(Selectors.filterset.regions.filtermatch).classList.add('hidden');
-            filterSet.querySelector(Selectors.filterset.fields.join).value = 1;
-            filterSet.dataset.filterverb = 1;
+            filterSet.querySelector(Selectors.filterset.fields.join).value = 2;
+            filterSet.dataset.filterverb = 2;
         } else {
             filterSet.querySelector(Selectors.filterset.regions.filtermatch).classList.remove('hidden');
         }

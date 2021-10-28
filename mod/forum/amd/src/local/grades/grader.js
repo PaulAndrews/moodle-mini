@@ -17,6 +17,7 @@
  * This module will tie together all of the different calls the gradable module will make.
  *
  * @module     mod_forum/local/grades/grader
+ * @package    mod_forum
  * @copyright  2019 Mathew May <mathew.solutions>
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -64,7 +65,7 @@ const displayUserPicker = (root, html) => {
  *
  * @param {String} html
  * @param {String} js
- * @returns {array} An array containing the HTML, and JS.
+ * @return {[*, *]}
  */
 const fetchContentFromRender = (html, js) => {
     return [html, js];

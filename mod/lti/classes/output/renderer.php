@@ -61,15 +61,14 @@ class renderer extends plugin_renderer_base {
     }
 
     /**
-     * Render the reposting of the cross site request.
+     * Render the external registration return page
      *
-     * @param repost_crosssite_page $page the page renderable.
+     * @param tool_configure_page $page
      *
-     * @return string rendered html for the page.
+     * @return string html for the page
      */
-    public function render_repost_crosssite_page(repost_crosssite_page $page): string {
+    public function render_registration_upgrade_choice_page($page) {
         $data = $page->export_for_template($this);
-        return parent::render_from_template('mod_lti/repost_crosssite', $data);
+        return parent::render_from_template('mod_lti/registration_upgrade_choice_page', $data);
     }
-
 }
